@@ -1,11 +1,13 @@
-import { User } from "@/types/user";
+"use client";
 
-interface ProfileProps {
-  user: User;
+import { useUserStore } from "@/stores/userStore";
+
+export default function Profile() {
+  const { user } = useUserStore();
+
+  return (
+    <>
+      <div>{user?.phone_number}</div>
+    </>
+  );
 }
-
-const profile: React.FC<ProfileProps> = async ({ user }) => {
-  return <>{user.phone_number}</>;
-};
-
-export default profile;
