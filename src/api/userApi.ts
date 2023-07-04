@@ -33,7 +33,8 @@ export default async function getUser() {
     );
 
     if (!refresh_response.ok) {
-      throw new Error("Refresh token expired");
+      // Refresh token is expired
+      return;
     }
 
     const data: RefreshResponse = await refresh_response.json();

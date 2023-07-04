@@ -7,4 +7,6 @@ export interface User {
   is_staff: boolean;
   email: string;
   is_owner: boolean;
+  salon: number | null;
+  addresses: number[];
 }

@@ -1,11 +1,14 @@
 "use client";
 import { useState } from "react";
 import Datepicker from "react-tailwindcss-datepicker";
-import { DateValueType } from "react-tailwindcss-datepicker/dist/types";
+import {
+  DateType,
+  DateValueType,
+} from "react-tailwindcss-datepicker/dist/types";
 
 type DateRange = {
-  startDate: Date | null;
-  endDate: Date | null;
+  startDate: DateType | null;
+  endDate: DateType | null;
 };
 
 type OnChangeType = (
@@ -20,22 +23,15 @@ export default function FloatingCalendarPicker() {
   });
 
   const handleValueChange: OnChangeType = (newValue) => {
-    console.log("newValue:", newValue);
-    // setValue(newValue);
+    if (newValue !== null) {
+      setValue(newValue);
+    }
   };
 
   return (
     <>
-      <div className="relative">
-        <div className="absolute top-full mt-2 p-4 bg-white shadow-lg rounded-md">
-          <Datepicker
-            asSingle={true}
-            value={value}
-            onChange={handleValueChange}
-          />
-          This is the floating menu.
-        </div>
-      </div>
+      <Datepicker asSingle={true} value={value} onChange={handleValueChange} />
+      This is the floating menu.
     </>
   );
 }

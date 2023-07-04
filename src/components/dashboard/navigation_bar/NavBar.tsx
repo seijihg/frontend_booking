@@ -4,9 +4,9 @@ import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { PlusIcon } from "@heroicons/react/20/solid";
-import { User } from "@/types/user";
+
+import AppointmentForm from "./AppointmentForm";
 import { useUserStore } from "@/stores/userStore";
-import FloatingCalendarPicker from "./FloatingCalendarPicker";
 
 const temp = {
   name: "Tom Cook",
@@ -91,8 +91,11 @@ export default function NavBar() {
                     <PlusIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
                     New Appointment
                   </button>
-
-                  <FloatingCalendarPicker />
+                  <div className="relative">
+                    <div className="absolute top-full mt-2 p-4 bg-white shadow-lg rounded-md">
+                      <AppointmentForm />
+                    </div>
+                  </div>
                 </div>
                 <div className="hidden md:ml-4 md:flex md:flex-shrink-0 md:items-center">
                   <button

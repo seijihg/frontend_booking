@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useMutation } from "@tanstack/react-query";
+import { useUserStore } from "@/stores/userStore";
 
 interface IFormInput {
   email: string;
@@ -61,6 +62,7 @@ function LoginForm() {
   const { isLoading, isError, error, mutate } = useMutation(loginUser, {
     onSuccess: (data) => {
       Cookies.set("token", data["access_token"]);
+      useUserStore.setState({ user: data.user });
       router.push("/dashboard");
     },
   });

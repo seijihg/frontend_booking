@@ -1,5 +1,6 @@
-import UserStoreInitializer from "@/components/UserStoreInitiliazer";
 import "@/styles/globals.scss";
+
+import UserStoreInitializer from "@/components/UserStoreInitiliazer";
 import Providers from "@/utils/provider";
 import { useUserStore } from "@/stores/userStore";
 import getUser from "@/api/userApi";
