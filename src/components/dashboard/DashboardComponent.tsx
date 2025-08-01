@@ -2,14 +2,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import Profile from "@/components/dashboard/Profile";
+import SalonCalendar from "@/components/dashboard/SalonCalendar";
+import CalendarView from "@/components/calendar/CalendarView";
 import NavBar from "@/components/dashboard/navigation_bar/NavBar";
 import { useUserStore } from "@/stores/userStore";
+import Profile from "./Profile";
+
+type ViewType = "dashboard" | "calendar" | "team" | "projects";
 
 export default function DashboardComponent() {
   const router = useRouter();
   const { user } = useUserStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewType>("dashboard");
 
   useEffect(() => {
     console.log(user);
@@ -20,12 +25,31 @@ export default function DashboardComponent() {
     }
   }, [user, router]);
 
+  const renderContent = () => {
+    switch (currentView) {
+      case "dashboard":
+        return <Profile />;
+      case "calendar":
+        return <CalendarView />;
+      case "team":
+        return (
+          <div className="p-8 text-gray-500">Team view coming soon...</div>
+        );
+      case "projects":
+        return (
+          <div className="p-8 text-gray-500">Projects view coming soon...</div>
+        );
+      default:
+        return <Profile />;
+    }
+  };
+
   return (
     !isLoading && (
-      <>
-        <NavBar />
-        <Profile />
-      </>
+      <div className="flex h-screen flex-col">
+        <NavBar currentView={currentView} onViewChange={setCurrentView} />
+        <div className="flex-1 overflow-auto">{renderContent()}</div>
+      </div>
     )
   );
 }
