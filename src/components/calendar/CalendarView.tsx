@@ -113,7 +113,7 @@ export default function CalendarView() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex flex-none items-center justify-between border-b border-gray-200 px-6 py-4">
+      <header className="flex flex-none items-center justify-between border-b border-gray-200 px-6 py-4 bg-gray-100">
         <div>
           <h1 className="text-base font-semibold text-gray-900">
             <time
