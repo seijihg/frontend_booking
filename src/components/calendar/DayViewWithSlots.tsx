@@ -34,14 +34,14 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
               key={columnId}
               className="px-3 py-2 text-center text-sm font-semibold text-gray-900"
             >
-              Column {columnId}
+              C{columnId}
             </div>
           ))}
         </div>
       </div>
 
       <div className="flex flex-auto overflow-hidden">
-        <div className="sticky left-0 z-10 w-14 flex-none" />
+        <div className="sticky left-0 z-10 w-14 flex-none border-r border-gray-200" />
         <div className="grid flex-auto grid-cols-5 grid-rows-1">
           {/* Horizontal lines for hours - spans all columns */}
           <div
