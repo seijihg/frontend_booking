@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { PlusIcon } from "@heroicons/react/20/solid";
+import { useRouter } from "next/navigation";
 
 import AppointmentForm from "./AppointmentForm";
 import { useUserStore } from "@/stores/userStore";
@@ -15,12 +16,13 @@ const temp = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 
-const navigation = [
-  { name: "Dashboard", href: "#", current: true },
-  { name: "Team", href: "#", current: false },
-  { name: "Projects", href: "#", current: false },
-  { name: "Calendar", href: "#", current: false },
-];
+type ViewType = "dashboard" | "calendar" | "team" | "projects";
+
+interface NavBarProps {
+  currentView: ViewType;
+  onViewChange: (view: ViewType) => void;
+}
+
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" },
@@ -31,8 +33,44 @@ function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function NavBar() {
-  const { user } = useUserStore();
+export default function NavBar({ currentView, onViewChange }: NavBarProps) {
+  const { user, clearUser } = useUserStore();
+  const router = useRouter();
+
+  const navigation = [
+    {
+      name: "Dashboard",
+      view: "dashboard" as ViewType,
+      current: currentView === "dashboard",
+    },
+    {
+      name: "Calendar",
+      view: "calendar" as ViewType,
+      current: currentView === "calendar",
+    },
+    { name: "Team", view: "team" as ViewType, current: currentView === "team" },
+    {
+      name: "Projects",
+      view: "projects" as ViewType,
+      current: currentView === "projects",
+    },
+  ];
+
+  const handleSignOut = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        clearUser();
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <Disclosure as="nav" className="bg-gray-800">
@@ -66,9 +104,9 @@ export default function NavBar() {
                 </div>
                 <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
                   {navigation.map((item) => (
-                    <a
+                    <button
                       key={item.name}
-                      href={item.href}
+                      onClick={() => onViewChange(item.view)}
                       className={classNames(
                         item.current
                           ? "bg-gray-900 text-white"
@@ -78,25 +116,11 @@ export default function NavBar() {
                       aria-current={item.current ? "page" : undefined}
                     >
                       {item.name}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
               <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <button
-                    type="button"
-                    className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-                  >
-                    <PlusIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
-                    New Appointment
-                  </button>
-                  <div className="relative">
-                    <div className="absolute top-full mt-2 p-4 bg-white shadow-lg rounded-md">
-                      <AppointmentForm />
-                    </div>
-                  </div>
-                </div>
                 <div className="hidden md:ml-4 md:flex md:flex-shrink-0 md:items-center">
                   <button
                     type="button"
@@ -131,15 +155,19 @@ export default function NavBar() {
                         {userNavigation.map((item) => (
                           <Menu.Item key={item.name}>
                             {({ active }) => (
-                              <a
-                                href={item.href}
+                              <button
+                                onClick={() => {
+                                  if (item.name === "Sign out") {
+                                    handleSignOut();
+                                  }
+                                }}
                                 className={classNames(
                                   active ? "bg-gray-100" : "",
-                                  "block px-4 py-2 text-sm text-gray-700"
+                                  "block w-full text-left px-4 py-2 text-sm text-gray-700"
                                 )}
                               >
                                 {item.name}
-                              </a>
+                              </button>
                             )}
                           </Menu.Item>
                         ))}
@@ -156,8 +184,8 @@ export default function NavBar() {
               {navigation.map((item) => (
                 <Disclosure.Button
                   key={item.name}
-                  as="a"
-                  href={item.href}
+                  as="button"
+                  onClick={() => onViewChange(item.view)}
                   className={classNames(
                     item.current
                       ? "bg-gray-900 text-white"
@@ -199,8 +227,12 @@ export default function NavBar() {
                 {userNavigation.map((item) => (
                   <Disclosure.Button
                     key={item.name}
-                    as="a"
-                    href={item.href}
+                    as="button"
+                    onClick={() => {
+                      if (item.name === "Sign out") {
+                        handleSignOut();
+                      }
+                    }}
                     className="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
                   >
                     {item.name}
