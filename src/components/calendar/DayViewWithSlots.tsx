@@ -23,13 +23,10 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
 }) => {
   // Only show business hours: 7AM to 9PM (7:00 - 21:00)
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
-  
-  console.log('DayViewWithSlots - appointments:', appointments);
-  console.log('DayViewWithSlots - selectedDate:', selectedDate);
 
   const formatTime = (hour: number) => {
-    if (hour === 0) return '12 AM';
-    if (hour === 12) return '12 PM';
+    if (hour === 0) return "12 AM";
+    if (hour === 12) return "12 PM";
     return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
   };
 
@@ -41,7 +38,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
           {/* Horizontal lines for hours */}
           <div
             className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
-            style={{ gridTemplateRows: 'repeat(14, minmax(5.25rem, 1fr))' }}
+            style={{ gridTemplateRows: "repeat(14, minmax(5.25rem, 1fr))" }}
           >
             {hours.map((hour) => (
               <div key={hour} className="relative">
@@ -55,32 +52,30 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
           {/* Appointments */}
           <ol
             className="col-start-1 col-end-2 row-start-1 grid grid-cols-1"
-            style={{ gridTemplateRows: 'repeat(56, minmax(0, 1fr))' }}
+            style={{ gridTemplateRows: "repeat(56, minmax(0, 1fr))" }}
           >
             {appointments.map((apt, index) => {
-              const [startHour, startMinute] = apt.startTime.split(':').map(Number);
-              const [endHour, endMinute] = apt.endTime.split(':').map(Number);
-              
-              console.log(`Appointment ${apt.id}: ${startHour}:${startMinute} - ${endHour}:${endMinute}`);
-              
+              const [startHour, startMinute] = apt.startTime
+                .split(":")
+                .map(Number);
+              const [endHour, endMinute] = apt.endTime.split(":").map(Number);
+
               // Filter out appointments outside business hours
               // Allow appointments that start before 9PM (21:00)
               if (startHour < 7 || startHour >= 21) {
-                console.log(`Filtering out appointment ${apt.id} - outside business hours`);
                 return null;
               }
-              
+
               // Calculate grid row positions (4 slots per hour for 15-minute increments)
               // Adjust for 7AM start time
-              const startRow = ((startHour - 7) * 4) + Math.floor(startMinute / 15) + 1;
-              const endRow = ((endHour - 7) * 4) + Math.floor(endMinute / 15) + 1;
+              const startRow =
+                (startHour - 7) * 4 + Math.floor(startMinute / 15) + 1;
+              const endRow = (endHour - 7) * 4 + Math.floor(endMinute / 15) + 1;
               const span = endRow - startRow;
-              
-              console.log(`Grid positioning - startRow: ${startRow}, endRow: ${endRow}, span: ${span}`);
-              
+
               const colorScheme = getColorScheme(index);
               const gridRow = `${startRow} / span ${span}`;
-              
+
               return (
                 <AppointmentSlot
                   key={apt.id}

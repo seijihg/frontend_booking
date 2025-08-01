@@ -12,7 +12,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useAppointmentStore } from "@/stores/appointmentStore";
 import DayViewWithSlots from "./DayViewWithSlots";
-import { getBookings } from "@/api/bookingApi";
+import { getAppointments } from "@/api/appointmentApi";
+import AppointmentForm from "./AppointmentForm";
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -55,30 +56,30 @@ export default function CalendarView() {
     const fetchAppointments = async () => {
       try {
         setIsLoading(true);
-        const bookings: BookingData[] = await getBookings();
-        
+        const bookings: BookingData[] = await getAppointments();
+
         // Transform booking data to appointment format
-        const transformedAppointments: Appointment[] = bookings.map(booking => {
-          // Parse as UTC and keep in UTC (don't convert to local time)
-          const appointmentDate = dayjs.utc(booking.appointment_time);
-          const startTime = appointmentDate.format('HH:mm');
-          // Assume 1 hour duration for now
-          const endTime = appointmentDate.add(1, 'hour').format('HH:mm');
-          
-          console.log(`Booking ${booking.id}: UTC time ${booking.appointment_time} -> ${startTime}`);
-          
-          return {
-            id: booking.id.toString(),
-            date: appointmentDate.format('YYYY-MM-DD'),
-            startTime: startTime,
-            endTime: endTime,
-            title: booking.comment || `Appointment #${booking.id}`,
-          };
-        });
-        
+        const transformedAppointments: Appointment[] = bookings.map(
+          (booking) => {
+            // Parse as UTC and keep in UTC (don't convert to local time)
+            const appointmentDate = dayjs.utc(booking.appointment_time);
+            const startTime = appointmentDate.format("HH:mm");
+            // Assume 1 hour duration for now
+            const endTime = appointmentDate.add(1, "hour").format("HH:mm");
+
+            return {
+              id: booking.id.toString(),
+              date: appointmentDate.format("YYYY-MM-DD"),
+              startTime: startTime,
+              endTime: endTime,
+              title: booking.comment || `Appointment #${booking.id}`,
+            };
+          }
+        );
+
         setAppointments(transformedAppointments);
       } catch (error) {
-        console.error('Error fetching appointments:', error);
+        console.error("Error fetching appointments:", error);
       } finally {
         setIsLoading(false);
       }
@@ -139,8 +140,8 @@ export default function CalendarView() {
 
   // Filter appointments for selected date
   const dailyAppointments = useMemo(() => {
-    const selectedDateStr = selectedDate.format('YYYY-MM-DD');
-    return appointments.filter(apt => apt.date === selectedDateStr);
+    const selectedDateStr = selectedDate.format("YYYY-MM-DD");
+    return appointments.filter((apt) => apt.date === selectedDateStr);
   }, [appointments, selectedDate]);
 
   return (
@@ -415,6 +416,9 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+
+      {/* Appointment Form Modal */}
+      <AppointmentForm />
     </div>
   );
 }
