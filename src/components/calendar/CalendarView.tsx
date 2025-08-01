@@ -7,42 +7,109 @@ import {
   EllipsisHorizontalIcon,
 } from "@heroicons/react/20/solid";
 import { Menu } from "@headlessui/react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { useAppointmentStore } from "@/stores/appointmentStore";
-import DayViewWithSlots from "../dashboard/calendar/DayViewWithSlots";
+import DayViewWithSlots from "./DayViewWithSlots";
+import { getBookings } from "@/api/bookingApi";
+
+// Extend dayjs with UTC plugin
+dayjs.extend(utc);
 
 type ViewType = "day" | "week" | "month" | "year";
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
+function classNames(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+interface Appointment {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+}
+
+interface BookingData {
+  id: number;
+  created: string;
+  modified: string;
+  appointment_time: string;
+  comment: string;
+  task_id: string;
+  salon: number;
+  user: number;
+  customer: number;
 }
 
 export default function CalendarView() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [currentView, setCurrentView] = useState<ViewType>("day");
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { setAppointmentFormOpen } = useAppointmentStore();
+
+  // Fetch appointments
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsLoading(true);
+        const bookings: BookingData[] = await getBookings();
+        
+        // Transform booking data to appointment format
+        const transformedAppointments: Appointment[] = bookings.map(booking => {
+          // Parse as UTC and keep in UTC (don't convert to local time)
+          const appointmentDate = dayjs.utc(booking.appointment_time);
+          const startTime = appointmentDate.format('HH:mm');
+          // Assume 1 hour duration for now
+          const endTime = appointmentDate.add(1, 'hour').format('HH:mm');
+          
+          console.log(`Booking ${booking.id}: UTC time ${booking.appointment_time} -> ${startTime}`);
+          
+          return {
+            id: booking.id.toString(),
+            date: appointmentDate.format('YYYY-MM-DD'),
+            startTime: startTime,
+            endTime: endTime,
+            title: booking.comment || `Appointment #${booking.id}`,
+          };
+        });
+        
+        setAppointments(transformedAppointments);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   // Generate calendar days for mini calendar
   const calendarDays = useMemo(() => {
-    const startOfMonth = selectedDate.startOf('month');
-    const endOfMonth = selectedDate.endOf('month');
-    const startDate = startOfMonth.startOf('week');
-    const endDate = endOfMonth.endOf('week');
-    
+    const startOfMonth = selectedDate.startOf("month");
+    const endOfMonth = selectedDate.endOf("month");
+    const startDate = startOfMonth.startOf("week");
+    const endDate = endOfMonth.endOf("week");
+
     const days = [];
     let currentDate = startDate;
-    
-    while (currentDate.isBefore(endDate) || currentDate.isSame(endDate, 'day')) {
+
+    while (
+      currentDate.isBefore(endDate) ||
+      currentDate.isSame(endDate, "day")
+    ) {
       days.push({
-        date: currentDate.format('YYYY-MM-DD'),
+        date: currentDate.format("YYYY-MM-DD"),
         isCurrentMonth: currentDate.month() === selectedDate.month(),
-        isToday: currentDate.isSame(dayjs(), 'day'),
-        isSelected: currentDate.isSame(selectedDate, 'day'),
+        isToday: currentDate.isSame(dayjs(), "day"),
+        isSelected: currentDate.isSame(selectedDate, "day"),
       });
-      currentDate = currentDate.add(1, 'day');
+      currentDate = currentDate.add(1, "day");
     }
-    
+
     return days;
   }, [selectedDate]);
 
@@ -70,6 +137,11 @@ export default function CalendarView() {
     setAppointmentFormOpen(true);
   };
 
+  // Filter appointments for selected date
+  const dailyAppointments = useMemo(() => {
+    const selectedDateStr = selectedDate.format('YYYY-MM-DD');
+    return appointments.filter(apt => apt.date === selectedDateStr);
+  }, [appointments, selectedDate]);
 
   return (
     <div className="flex h-full flex-col">
@@ -134,9 +206,7 @@ export default function CalendarView() {
                 />
               </Menu.Button>
 
-              <Menu.Items
-                className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-              >
+              <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="py-1">
                   <Menu.Item>
                     <button
@@ -190,9 +260,7 @@ export default function CalendarView() {
                 <EllipsisHorizontalIcon aria-hidden="true" className="size-5" />
               </Menu.Button>
 
-              <Menu.Items
-                className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-              >
+              <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="py-1">
                   <Menu.Item>
                     <button
@@ -255,7 +323,7 @@ export default function CalendarView() {
             <div className="flex-auto">
               {currentView === "day" && (
                 <DayViewWithSlots
-                  appointments={[]} // This would come from your API
+                  appointments={dailyAppointments}
                   selectedDate={selectedDate.format("YYYY-MM-DD")}
                 />
               )}
@@ -283,7 +351,7 @@ export default function CalendarView() {
           <div className="flex items-center text-center text-gray-900">
             <button
               type="button"
-              onClick={() => setSelectedDate(selectedDate.subtract(1, 'month'))}
+              onClick={() => setSelectedDate(selectedDate.subtract(1, "month"))}
               className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
             >
               <span className="sr-only">Previous month</span>
@@ -294,7 +362,7 @@ export default function CalendarView() {
             </div>
             <button
               type="button"
-              onClick={() => setSelectedDate(selectedDate.add(1, 'month'))}
+              onClick={() => setSelectedDate(selectedDate.add(1, "month"))}
               className="-m-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
             >
               <span className="sr-only">Next month</span>
@@ -317,22 +385,27 @@ export default function CalendarView() {
                 type="button"
                 onClick={() => setSelectedDate(dayjs(day.date))}
                 className={classNames(
-                  'py-1.5 hover:bg-gray-100 focus:z-10',
-                  day.isCurrentMonth ? 'bg-white' : 'bg-gray-50',
-                  day.isSelected && day.isCurrentMonth && 'font-semibold',
-                  !day.isSelected && !day.isCurrentMonth && !day.isToday && 'text-gray-400',
-                  !day.isSelected && day.isToday && 'text-indigo-600 font-semibold',
-                  dayIdx === 0 && 'rounded-tl-lg',
-                  dayIdx === 6 && 'rounded-tr-lg',
-                  dayIdx === calendarDays.length - 7 && 'rounded-bl-lg',
-                  dayIdx === calendarDays.length - 1 && 'rounded-br-lg'
+                  "py-1.5 hover:bg-gray-100 focus:z-10",
+                  day.isCurrentMonth ? "bg-white" : "bg-gray-50",
+                  day.isSelected && day.isCurrentMonth && "font-semibold",
+                  !day.isSelected &&
+                    !day.isCurrentMonth &&
+                    !day.isToday &&
+                    "text-gray-400",
+                  !day.isSelected &&
+                    day.isToday &&
+                    "text-indigo-600 font-semibold",
+                  dayIdx === 0 && "rounded-tl-lg",
+                  dayIdx === 6 && "rounded-tr-lg",
+                  dayIdx === calendarDays.length - 7 && "rounded-bl-lg",
+                  dayIdx === calendarDays.length - 1 && "rounded-br-lg"
                 )}
               >
                 <time
                   dateTime={day.date}
                   className={classNames(
-                    'mx-auto flex h-7 w-7 items-center justify-center rounded-full',
-                    day.isSelected && 'bg-indigo-600 text-white'
+                    "mx-auto flex h-7 w-7 items-center justify-center rounded-full",
+                    day.isSelected && "bg-indigo-600 text-white"
                   )}
                 >
                   {day.date.split("-").pop()?.replace(/^0/, "")}
