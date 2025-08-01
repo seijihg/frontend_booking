@@ -2,7 +2,6 @@ import "@/styles/globals.scss";
 
 import UserStoreInitializer from "@/components/UserStoreInitiliazer";
 import Providers from "@/utils/provider";
-import { useUserStore } from "@/stores/userStore";
 import getUser from "@/api/userApi";
 
 export const metadata = {
@@ -17,13 +16,14 @@ export default async function RootLayout({
 }) {
   const data = await getUser();
   const user = data?.user;
-  useUserStore.setState({ user: user });
 
   return (
     <html lang="en" className="h-full bg-white">
       <body className="h-full">
-        <UserStoreInitializer user={user} />
-        <Providers>{children}</Providers>
+        <Providers>
+          {user && <UserStoreInitializer user={user} />}
+          {children}
+        </Providers>
       </body>
     </html>
   );
