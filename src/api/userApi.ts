@@ -5,7 +5,7 @@ import { isTokenExpired } from "@/utils/tokens";
 import { RefreshResponse } from "@/types/misc";
 
 export default async function getUser() {
-  const nextCookies = cookies();
+  const nextCookies = await cookies();
 
   let token = nextCookies.get("token")?.value;
   const refresh_token = nextCookies.get("refresh_token")?.value;
