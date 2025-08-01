@@ -1,56 +1,38 @@
 "use client";
 
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState } from "react";
 import { Dialog, Transition, Listbox } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useAppointmentStore } from "@/stores/appointmentStore";
-import { getCustomers, createCustomer } from "@/api/customerApi";
-import { createAppointment } from "@/api/appointmentApi";
 import { useUserStore } from "@/stores/userStore";
+import { useCustomers, useCreateCustomer } from "@/hooks/useCustomers";
+import { useCreateAppointment } from "@/hooks/useAppointments";
+import { Customer } from "@/types/customer";
 import dayjs from "dayjs";
-
-interface Customer {
-  id: number;
-  full_name: string;
-  phone_number: string;
-  salon: number;
-}
 
 function classNames(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
 export default function AppointmentForm() {
-  const { isAppointmentFormOpen, setAppointmentFormOpen } = useAppointmentStore();
+  const { isAppointmentFormOpen, setAppointmentFormOpen, selectedColumnId } = useAppointmentStore();
   const { user } = useUserStore();
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [comment, setComment] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [columnId, setColumnId] = useState<number>(selectedColumnId || 1);
   
   // New customer form state
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
-
-  // Fetch customers on mount
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const data = await getCustomers();
-        setCustomers(data);
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-      }
-    };
-    
-    if (isAppointmentFormOpen) {
-      fetchCustomers();
-    }
-  }, [isAppointmentFormOpen]);
+  
+  // React Query hooks
+  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers();
+  const createCustomerMutation = useCreateCustomer();
+  const createAppointmentMutation = useCreateAppointment();
 
   const handleClose = () => {
     setAppointmentFormOpen(false);
@@ -62,20 +44,19 @@ export default function AppointmentForm() {
     setComment("");
     setNewCustomerName("");
     setNewCustomerPhone("");
+    setColumnId(1);
   };
 
   const handleCreateCustomer = async () => {
     if (!newCustomerName || !newCustomerPhone || !user?.salon) return;
 
-    setIsLoading(true);
     try {
-      const newCustomer = await createCustomer({
+      const newCustomer = await createCustomerMutation.mutateAsync({
         full_name: newCustomerName,
         phone_number: newCustomerPhone,
         salon: user.salon,
       });
       
-      setCustomers([...customers, newCustomer]);
       setSelectedCustomer(newCustomer);
       setShowNewCustomerForm(false);
       setNewCustomerName("");
@@ -83,8 +64,6 @@ export default function AppointmentForm() {
     } catch (error) {
       console.error("Error creating customer:", error);
       alert("Failed to create customer");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -102,20 +81,16 @@ export default function AppointmentForm() {
       appointment_time: appointmentDateTime,
       customer: selectedCustomer.id,
       comment: comment,
+      column_id: columnId,
     };
 
-    setIsLoading(true);
     try {
-      await createAppointment(payload);
+      await createAppointmentMutation.mutateAsync(payload);
       alert("Appointment created successfully!");
       handleClose();
-      // Refresh the calendar to show new appointment
-      window.location.reload();
     } catch (error) {
       console.error("Error creating appointment:", error);
       alert("Failed to create appointment");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -280,13 +255,35 @@ export default function AppointmentForm() {
                           <button
                             type="button"
                             onClick={handleCreateCustomer}
-                            disabled={isLoading || !newCustomerName || !newCustomerPhone}
+                            disabled={createCustomerMutation.isPending || !newCustomerName || !newCustomerPhone}
                             className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {isLoading ? "Creating..." : "Create Customer"}
+                            {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
                           </button>
                         </div>
                       )}
+
+                      {/* Column Selection */}
+                      <div>
+                        <label htmlFor="column" className="block text-sm font-medium leading-6 text-gray-900">
+                          Column
+                        </label>
+                        <div className="mt-2">
+                          <select
+                            id="column"
+                            name="column"
+                            value={columnId}
+                            onChange={(e) => setColumnId(Number(e.target.value))}
+                            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                          >
+                            {[1, 2, 3, 4, 5].map((col) => (
+                              <option key={col} value={col}>
+                                Column {col}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
                       {/* Date Selection */}
                       <div>
@@ -352,10 +349,10 @@ export default function AppointmentForm() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isLoading}
+                    disabled={createAppointmentMutation.isPending}
                     className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? "Creating..." : "Add Appointment"}
+                    {createAppointmentMutation.isPending ? "Creating..." : "Add Appointment"}
                   </button>
                   <button
                     type="button"

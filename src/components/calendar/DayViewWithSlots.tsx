@@ -2,14 +2,7 @@
 
 import React from "react";
 import AppointmentSlot, { getColorScheme } from "./AppointmentSlot";
-
-interface Appointment {
-  id: string;
-  date?: string;
-  startTime: string;
-  endTime: string;
-  title: string;
-}
+import { Appointment } from "@/types/appointment";
 
 interface DayViewWithSlotsProps {
   appointments: Appointment[];
@@ -32,26 +25,48 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-auto">
-        <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100" />
-        <div className="grid flex-auto grid-cols-1 grid-rows-1">
-          {/* Horizontal lines for hours */}
+      {/* Column headers */}
+      <div className="flex">
+        <div className="w-14 flex-none border-r border-b border-gray-200" />
+        <div className="grid flex-auto grid-cols-5 divide-x divide-gray-200 border-b border-gray-200">
+          {[1, 2, 3, 4, 5].map((columnId) => (
+            <div
+              key={columnId}
+              className="px-3 py-2 text-center text-sm font-semibold text-gray-900"
+            >
+              Column {columnId}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-auto overflow-hidden">
+        <div className="sticky left-0 z-10 w-14 flex-none" />
+        <div className="grid flex-auto grid-cols-5 grid-rows-1">
+          {/* Horizontal lines for hours - spans all columns */}
           <div
-            className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
+            className="col-start-1 col-end-6 row-start-1 grid divide-y divide-gray-100"
             style={{ gridTemplateRows: "repeat(14, minmax(5.25rem, 1fr))" }}
           >
             {hours.map((hour) => (
               <div key={hour} className="relative">
-                <div className="sticky left-0 z-20 -ml-14 -mt-2.5 w-14 pr-2 text-right text-xs/5 text-gray-400">
+                <div className="sticky left-0 z-20 -ml-14 mt-1 w-14 pr-2 text-right text-xs/5 text-gray-400">
                   {formatTime(hour)}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Appointments */}
+          {/* Vertical column dividers */}
+          <div className="col-start-1 col-end-6 row-start-1 grid grid-cols-5 divide-x divide-gray-100">
+            {[1, 2, 3, 4, 5].map((columnId) => (
+              <div key={columnId} className="col-span-1" />
+            ))}
+          </div>
+
+          {/* Appointments - now spans all 5 columns */}
           <ol
-            className="col-start-1 col-end-2 row-start-1 grid grid-cols-1"
+            className="col-start-1 col-end-6 row-start-1 grid grid-cols-5"
             style={{ gridTemplateRows: "repeat(56, minmax(0, 1fr))" }}
           >
             {appointments.map((apt, index) => {
@@ -76,6 +91,10 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
               const colorScheme = getColorScheme(index);
               const gridRow = `${startRow} / span ${span}`;
 
+              // Determine column position (default to column 1 if not specified)
+              const columnId = apt.column_id || 1;
+              const gridColumn = columnId;
+
               return (
                 <AppointmentSlot
                   key={apt.id}
@@ -84,6 +103,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
                   startTime={apt.startTime}
                   date={apt.date || selectedDate}
                   gridRow={gridRow}
+                  gridColumn={gridColumn}
                   colorScheme={colorScheme}
                 />
               );

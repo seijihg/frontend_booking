@@ -8,6 +8,7 @@ interface AppointmentSlotProps {
   startTime: string;
   date?: string;
   gridRow: string;
+  gridColumn?: number;
   colorScheme: {
     bg: string;
     hover: string;
@@ -23,11 +24,12 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
   startTime,
   date,
   gridRow,
+  gridColumn = 1,
   colorScheme,
 }) => {
   return (
     <li 
-      style={{ gridRow }}
+      style={{ gridRow, gridColumn }}
       className="relative mt-px flex"
     >
       <a

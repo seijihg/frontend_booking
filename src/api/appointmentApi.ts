@@ -1,10 +1,4 @@
-export interface AppointmentPayload {
-  salon: number;
-  user: number;
-  appointment_time: string;
-  customer: number;
-  comment: string;
-}
+import { AppointmentPayload } from "@/types/appointment";
 
 export const createAppointment = async (data: AppointmentPayload) => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}appointments/`, {
