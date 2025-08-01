@@ -2,14 +2,7 @@
 
 import React from "react";
 import AppointmentSlot, { getColorScheme } from "./AppointmentSlot";
-
-interface Appointment {
-  id: string;
-  date?: string;
-  startTime: string;
-  endTime: string;
-  title: string;
-}
+import { Appointment } from "@/types/appointment";
 
 interface DayViewWithSlotsProps {
   appointments: Appointment[];
@@ -23,64 +16,85 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
 }) => {
   // Only show business hours: 7AM to 9PM (7:00 - 21:00)
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
-  
-  console.log('DayViewWithSlots - appointments:', appointments);
-  console.log('DayViewWithSlots - selectedDate:', selectedDate);
 
   const formatTime = (hour: number) => {
-    if (hour === 0) return '12 AM';
-    if (hour === 12) return '12 PM';
+    if (hour === 0) return "12 AM";
+    if (hour === 12) return "12 PM";
     return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
   };
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-auto">
-        <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100" />
-        <div className="grid flex-auto grid-cols-1 grid-rows-1">
-          {/* Horizontal lines for hours */}
+      {/* Column headers */}
+      <div className="flex">
+        <div className="w-14 flex-none border-r border-b border-gray-200" />
+        <div className="grid flex-auto grid-cols-5 divide-x divide-gray-200 border-b border-gray-200">
+          {[1, 2, 3, 4, 5].map((columnId) => (
+            <div
+              key={columnId}
+              className="px-3 py-2 text-center text-sm font-semibold text-gray-900"
+            >
+              Column {columnId}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-auto overflow-hidden">
+        <div className="sticky left-0 z-10 w-14 flex-none" />
+        <div className="grid flex-auto grid-cols-5 grid-rows-1">
+          {/* Horizontal lines for hours - spans all columns */}
           <div
-            className="col-start-1 col-end-2 row-start-1 grid divide-y divide-gray-100"
-            style={{ gridTemplateRows: 'repeat(14, minmax(5.25rem, 1fr))' }}
+            className="col-start-1 col-end-6 row-start-1 grid divide-y divide-gray-100"
+            style={{ gridTemplateRows: "repeat(14, minmax(5.25rem, 1fr))" }}
           >
             {hours.map((hour) => (
               <div key={hour} className="relative">
-                <div className="sticky left-0 z-20 -ml-14 -mt-2.5 w-14 pr-2 text-right text-xs/5 text-gray-400">
+                <div className="sticky left-0 z-20 -ml-14 mt-1 w-14 pr-2 text-right text-xs/5 text-gray-400">
                   {formatTime(hour)}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Appointments */}
+          {/* Vertical column dividers */}
+          <div className="col-start-1 col-end-6 row-start-1 grid grid-cols-5 divide-x divide-gray-100">
+            {[1, 2, 3, 4, 5].map((columnId) => (
+              <div key={columnId} className="col-span-1" />
+            ))}
+          </div>
+
+          {/* Appointments - now spans all 5 columns */}
           <ol
-            className="col-start-1 col-end-2 row-start-1 grid grid-cols-1"
-            style={{ gridTemplateRows: 'repeat(56, minmax(0, 1fr))' }}
+            className="col-start-1 col-end-6 row-start-1 grid grid-cols-5"
+            style={{ gridTemplateRows: "repeat(56, minmax(0, 1fr))" }}
           >
             {appointments.map((apt, index) => {
-              const [startHour, startMinute] = apt.startTime.split(':').map(Number);
-              const [endHour, endMinute] = apt.endTime.split(':').map(Number);
-              
-              console.log(`Appointment ${apt.id}: ${startHour}:${startMinute} - ${endHour}:${endMinute}`);
-              
+              const [startHour, startMinute] = apt.startTime
+                .split(":")
+                .map(Number);
+              const [endHour, endMinute] = apt.endTime.split(":").map(Number);
+
               // Filter out appointments outside business hours
               // Allow appointments that start before 9PM (21:00)
               if (startHour < 7 || startHour >= 21) {
-                console.log(`Filtering out appointment ${apt.id} - outside business hours`);
                 return null;
               }
-              
+
               // Calculate grid row positions (4 slots per hour for 15-minute increments)
               // Adjust for 7AM start time
-              const startRow = ((startHour - 7) * 4) + Math.floor(startMinute / 15) + 1;
-              const endRow = ((endHour - 7) * 4) + Math.floor(endMinute / 15) + 1;
+              const startRow =
+                (startHour - 7) * 4 + Math.floor(startMinute / 15) + 1;
+              const endRow = (endHour - 7) * 4 + Math.floor(endMinute / 15) + 1;
               const span = endRow - startRow;
-              
-              console.log(`Grid positioning - startRow: ${startRow}, endRow: ${endRow}, span: ${span}`);
-              
+
               const colorScheme = getColorScheme(index);
               const gridRow = `${startRow} / span ${span}`;
-              
+
+              // Determine column position (default to column 1 if not specified)
+              const columnId = apt.column_id || 1;
+              const gridColumn = columnId;
+
               return (
                 <AppointmentSlot
                   key={apt.id}
@@ -89,6 +103,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
                   startTime={apt.startTime}
                   date={apt.date || selectedDate}
                   gridRow={gridRow}
+                  gridColumn={gridColumn}
                   colorScheme={colorScheme}
                 />
               );

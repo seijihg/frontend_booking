@@ -1,18 +1,20 @@
 "use client";
 
 import {
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/20/solid";
 import { Menu } from "@headlessui/react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useAppointmentStore } from "@/stores/appointmentStore";
 import DayViewWithSlots from "./DayViewWithSlots";
-import { getBookings } from "@/api/bookingApi";
+import AppointmentForm from "./AppointmentForm";
+import ViewDropdown from "@/components/utils/ViewDropdown";
+import { useAppointments } from "@/hooks/useAppointments";
+import { Appointment, BookingData } from "@/types/appointment";
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -23,69 +25,35 @@ function classNames(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-interface Appointment {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  title: string;
-}
-
-interface BookingData {
-  id: number;
-  created: string;
-  modified: string;
-  appointment_time: string;
-  comment: string;
-  task_id: string;
-  salon: number;
-  user: number;
-  customer: number;
-}
-
 export default function CalendarView() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [currentView, setCurrentView] = useState<ViewType>("day");
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { setAppointmentFormOpen } = useAppointmentStore();
 
-  // Fetch appointments
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setIsLoading(true);
-        const bookings: BookingData[] = await getBookings();
-        
-        // Transform booking data to appointment format
-        const transformedAppointments: Appointment[] = bookings.map(booking => {
-          // Parse as UTC and keep in UTC (don't convert to local time)
-          const appointmentDate = dayjs.utc(booking.appointment_time);
-          const startTime = appointmentDate.format('HH:mm');
-          // Assume 1 hour duration for now
-          const endTime = appointmentDate.add(1, 'hour').format('HH:mm');
-          
-          console.log(`Booking ${booking.id}: UTC time ${booking.appointment_time} -> ${startTime}`);
-          
-          return {
-            id: booking.id.toString(),
-            date: appointmentDate.format('YYYY-MM-DD'),
-            startTime: startTime,
-            endTime: endTime,
-            title: booking.comment || `Appointment #${booking.id}`,
-          };
-        });
-        
-        setAppointments(transformedAppointments);
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Fetch appointments using React Query
+  const { data: bookings = [], isLoading, error } = useAppointments();
 
-    fetchAppointments();
-  }, []);
+  // Transform booking data to appointment format
+  const appointments = useMemo<Appointment[]>(() => {
+    if (!bookings || !Array.isArray(bookings)) return [];
+
+    return bookings.map((booking: BookingData) => {
+      // Parse as UTC and keep in UTC (don't convert to local time)
+      const appointmentDate = dayjs.utc(booking.appointment_time);
+      const startTime = appointmentDate.format("HH:mm");
+      // Assume 1 hour duration for now
+      const endTime = appointmentDate.add(1, "hour").format("HH:mm");
+      console.log(booking);
+      return {
+        id: booking.id.toString(),
+        date: appointmentDate.format("YYYY-MM-DD"),
+        startTime: startTime,
+        endTime: endTime,
+        title: booking.comment || `Appointment #${booking.id}`,
+        column_id: booking.column_id,
+      };
+    });
+  }, [bookings]);
 
   // Generate calendar days for mini calendar
   const calendarDays = useMemo(() => {
@@ -139,8 +107,8 @@ export default function CalendarView() {
 
   // Filter appointments for selected date
   const dailyAppointments = useMemo(() => {
-    const selectedDateStr = selectedDate.format('YYYY-MM-DD');
-    return appointments.filter(apt => apt.date === selectedDateStr);
+    const selectedDateStr = selectedDate.format("YYYY-MM-DD");
+    return appointments.filter((apt) => apt.date === selectedDateStr);
   }, [appointments, selectedDate]);
 
   return (
@@ -193,56 +161,17 @@ export default function CalendarView() {
             </button>
           </div>
           <div className="hidden md:ml-4 md:flex md:items-center">
-            <Menu as="div" className="relative">
-              <Menu.Button
-                type="button"
-                className="flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50"
-              >
-                {currentView.charAt(0).toUpperCase() + currentView.slice(1)}{" "}
-                view
-                <ChevronDownIcon
-                  aria-hidden="true"
-                  className="-mr-1 size-5 text-gray-400"
-                />
-              </Menu.Button>
-
-              <Menu.Items className="absolute right-0 z-10 mt-3 w-36 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="py-1">
-                  <Menu.Item>
-                    <button
-                      onClick={() => setCurrentView("day")}
-                      className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Day view
-                    </button>
-                  </Menu.Item>
-                  <Menu.Item>
-                    <button
-                      onClick={() => setCurrentView("week")}
-                      className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Week view
-                    </button>
-                  </Menu.Item>
-                  <Menu.Item>
-                    <button
-                      onClick={() => setCurrentView("month")}
-                      className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Month view
-                    </button>
-                  </Menu.Item>
-                  <Menu.Item>
-                    <button
-                      onClick={() => setCurrentView("year")}
-                      className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Year view
-                    </button>
-                  </Menu.Item>
-                </div>
-              </Menu.Items>
-            </Menu>
+            <ViewDropdown
+              currentView={currentView}
+              options={[
+                { value: "day", label: "Day" },
+                { value: "week", label: "Week" },
+                { value: "month", label: "Month" },
+                { value: "year", label: "Year" },
+              ]}
+              onViewChange={(view) => setCurrentView(view as ViewType)}
+              buttonLabel="view"
+            />
             <div className="ml-6 h-6 w-px bg-gray-300" />
             <button
               type="button"
@@ -321,7 +250,15 @@ export default function CalendarView() {
           <div className="flex w-full flex-auto">
             <div className="w-14 flex-none bg-white ring-1 ring-gray-100" />
             <div className="flex-auto">
-              {currentView === "day" && (
+              {error && (
+                <div className="p-4 text-red-500">
+                  Error loading appointments. Please try again.
+                </div>
+              )}
+              {isLoading && (
+                <div className="p-4 text-gray-500">Loading appointments...</div>
+              )}
+              {!error && !isLoading && currentView === "day" && (
                 <DayViewWithSlots
                   appointments={dailyAppointments}
                   selectedDate={selectedDate.format("YYYY-MM-DD")}
@@ -415,6 +352,9 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+
+      {/* Appointment Form Modal */}
+      <AppointmentForm />
     </div>
   );
 }
