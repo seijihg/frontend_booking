@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useUserStore } from "@/stores/userStore";
 
-export default function Profile() {
+export default function ProfileView() {
   const { user } = useUserStore();
   const [formData, setFormData] = useState({
     firstName: user?.first_name || "",
