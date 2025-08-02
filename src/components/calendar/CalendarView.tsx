@@ -249,7 +249,6 @@ export default function CalendarView() {
 
           {/* Main calendar content */}
           <div className="flex w-full flex-auto">
-            <div className="w-14 flex-none bg-white ring-1 ring-gray-100" />
             <div className="flex-auto">
               {error && (
                 <div className="p-4 text-red-500">
