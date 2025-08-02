@@ -97,69 +97,93 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
           />
 
           {/* Modal Container - Centers the modal vertically and horizontally */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              ref={modalRef}
-              layoutId={`appointment-${appointment.id}`}
-              initial={
-                position
-                  ? {
-                      top: position.top,
-                      left: position.left,
-                      width: position.width,
-                      height: position.height,
-                      position: "fixed" as const,
-                    }
-                  : {
-                      opacity: 0,
-                      scale: 0.9,
-                    }
-              }
-              animate={{
-                top: "auto",
-                left: "auto",
-                width: "auto",
-                height: "auto",
-                position: "static" as const,
-                opacity: 1,
-                scale: 1,
-              }}
-              exit={
-                position
-                  ? {
-                      top: position.top,
-                      left: position.left,
-                      width: position.width,
-                      height: position.height,
-                      position: "fixed" as const,
-                    }
-                  : {
-                      opacity: 0,
-                      scale: 0.9,
-                    }
-              }
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-              }}
-              className={`w-full max-w-sm sm:max-w-md rounded-xl ${colorScheme.bg} p-6 shadow-2xl`}
-              style={{
-                maxHeight: "calc(100vh - 2rem)",
-                overflowY: "auto",
-              }}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={`appointment-title-${appointment.id}`}
-            >
-              {/* Content */}
-              <div className="space-y-4 mt-2 sm:mt-0 min-w-[300px]">
-                <h3
-                  id={`appointment-title-${appointment.id}`}
-                  className={`text-lg font-semibold ${colorScheme.text}`}
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <motion.div
+                ref={modalRef}
+                layoutId={`appointment-${appointment.id}`}
+                initial={
+                  position
+                    ? {
+                        position: "fixed" as const,
+                        top: position.top,
+                        left: position.left,
+                        width: position.width,
+                        height: position.height,
+                        x: 0,
+                        y: 0,
+                      }
+                    : {
+                        opacity: 0,
+                        scale: 0.95,
+                        y: 20,
+                      }
+                }
+                animate={{
+                  position: "relative" as const,
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "auto",
+                  x: 0,
+                  y: 0,
+                  opacity: 1,
+                  scale: 1,
+                }}
+                exit={
+                  position
+                    ? {
+                        position: "fixed" as const,
+                        top: position.top,
+                        left: position.left,
+                        width: position.width,
+                        height: position.height,
+                        x: 0,
+                        y: 0,
+                      }
+                    : {
+                        opacity: 0,
+                        scale: 0.95,
+                        y: 20,
+                      }
+                }
+                transition={{
+                  layout: {
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                  },
+                  opacity: {
+                    duration: 0.2,
+                  },
+                  scale: {
+                    duration: 0.2,
+                  },
+                }}
+                className={`relative w-full max-w-sm sm:max-w-md rounded-xl ${colorScheme.bg} shadow-2xl overflow-hidden`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`appointment-title-${appointment.id}`}
+              >
+                {/* Close button */}
+                <button
+                  onClick={onClose}
+                  className="absolute right-4 top-4 z-10 rounded-full p-2 hover:bg-gray-100 hover:bg-opacity-10 transition-colors"
+                  aria-label="Close appointment details"
                 >
-                  {appointment.title}
-                </h3>
+                  <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                {/* Content */}
+                <div className="p-6 space-y-4">
+                  <h3
+                    id={`appointment-title-${appointment.id}`}
+                    className={`text-lg font-semibold ${colorScheme.text}`}
+                  >
+                    {appointment.title}
+                  </h3>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -216,8 +240,9 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
                     ? "Deleting..."
                     : "Delete Appointment"}
                 </button>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </>
       )}
