@@ -10,27 +10,41 @@ import { useCustomers, useCreateCustomer } from "@/hooks/useCustomers";
 import { useCreateAppointment } from "@/hooks/useAppointments";
 import { Customer } from "@/types/customer";
 import dayjs from "dayjs";
+import Alert from "@/components/common/Alert";
 
 function classNames(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
 export default function AppointmentForm() {
-  const { isAppointmentFormOpen, setAppointmentFormOpen, selectedColumnId } = useAppointmentStore();
+  const { isAppointmentFormOpen, setAppointmentFormOpen, selectedColumnId } =
+    useAppointmentStore();
   const { user } = useUserStore();
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
+  const [selectedDate, setSelectedDate] = useState(
+    dayjs().format("YYYY-MM-DD")
+  );
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [comment, setComment] = useState("");
   const [columnId, setColumnId] = useState<number>(selectedColumnId || 1);
-  
+
   // New customer form state
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
-  
+
+  // Single alert state for all notifications
+  const [alertState, setAlertState] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({ show: false, type: "success", message: "" });
+
   // React Query hooks
-  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers();
+  const { data: customers = [], isLoading: isLoadingCustomers } =
+    useCustomers();
   const createCustomerMutation = useCreateCustomer();
   const createAppointmentMutation = useCreateAppointment();
 
@@ -45,6 +59,13 @@ export default function AppointmentForm() {
     setNewCustomerName("");
     setNewCustomerPhone("");
     setColumnId(1);
+    // Reset alert
+    setAlertState({ show: false, type: "success", message: "" });
+  };
+
+  // Show alert helper
+  const showAlert = (type: "success" | "error", message: string) => {
+    setAlertState({ show: true, type, message });
   };
 
   const handleCreateCustomer = async () => {
@@ -56,25 +77,26 @@ export default function AppointmentForm() {
         phone_number: newCustomerPhone,
         salon: user.salon,
       });
-      
+
       setSelectedCustomer(newCustomer);
       setShowNewCustomerForm(false);
       setNewCustomerName("");
       setNewCustomerPhone("");
+      showAlert("success", "Created user successfully.");
     } catch (error) {
       console.error("Error creating customer:", error);
-      alert("Failed to create customer");
+      showAlert("error", "Failed to create a customer.");
     }
   };
 
   const handleSubmit = async () => {
     if (!selectedCustomer || !user) {
-      alert("Please select a customer");
+      showAlert("error", "Please select a customer");
       return;
     }
 
     const appointmentDateTime = `${selectedDate}T${selectedTime}:00Z`;
-    
+
     const payload = {
       salon: user.salon,
       user: user.id,
@@ -86,11 +108,14 @@ export default function AppointmentForm() {
 
     try {
       await createAppointmentMutation.mutateAsync(payload);
-      alert("Appointment created successfully!");
-      handleClose();
+      showAlert("success", "Appointment created successfully!");
+      // Delay closing to show success message
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
     } catch (error) {
       console.error("Error creating appointment:", error);
-      alert("Failed to create appointment");
+      showAlert("error", "Failed to create appointment");
     }
   };
 
@@ -98,7 +123,9 @@ export default function AppointmentForm() {
   const timeSlots = [];
   for (let hour = 7; hour < 21; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      const time = `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
       timeSlots.push(time);
     }
   }
@@ -140,27 +167,38 @@ export default function AppointmentForm() {
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
-                
+
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                    <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-semibold leading-6 text-gray-900"
+                    >
                       Add Appointment
                     </Dialog.Title>
-                    
+
                     <div className="mt-4 space-y-4">
                       {/* Customer Selection */}
                       <div>
-                        <Listbox value={selectedCustomer} onChange={setSelectedCustomer}>
+                        <Listbox
+                          value={selectedCustomer}
+                          onChange={setSelectedCustomer}
+                        >
                           <Listbox.Label className="block text-sm font-medium leading-6 text-gray-900">
                             Customer
                           </Listbox.Label>
                           <div className="relative mt-2">
                             <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
                               <span className="block truncate">
-                                {selectedCustomer ? selectedCustomer.full_name : "Select a customer"}
+                                {selectedCustomer
+                                  ? selectedCustomer.full_name
+                                  : "Select a customer"}
                               </span>
                               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                <ChevronUpDownIcon
+                                  className="h-5 w-5 text-gray-400"
+                                  aria-hidden="true"
+                                />
                               </span>
                             </Listbox.Button>
 
@@ -176,7 +214,9 @@ export default function AppointmentForm() {
                                     key={customer.id}
                                     className={({ active }) =>
                                       classNames(
-                                        active ? "bg-indigo-600 text-white" : "text-gray-900",
+                                        active
+                                          ? "bg-indigo-600 text-white"
+                                          : "text-gray-900",
                                         "relative cursor-default select-none py-2 pl-3 pr-9"
                                       )
                                     }
@@ -184,17 +224,29 @@ export default function AppointmentForm() {
                                   >
                                     {({ selected, active }) => (
                                       <>
-                                        <span className={classNames(selected ? "font-semibold" : "font-normal", "block truncate")}>
+                                        <span
+                                          className={classNames(
+                                            selected
+                                              ? "font-semibold"
+                                              : "font-normal",
+                                            "block truncate"
+                                          )}
+                                        >
                                           {customer.full_name}
                                         </span>
                                         {selected ? (
                                           <span
                                             className={classNames(
-                                              active ? "text-white" : "text-indigo-600",
+                                              active
+                                                ? "text-white"
+                                                : "text-indigo-600",
                                               "absolute inset-y-0 right-0 flex items-center pr-4"
                                             )}
                                           >
-                                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                            <CheckIcon
+                                              className="h-5 w-5"
+                                              aria-hidden="true"
+                                            />
                                           </span>
                                         ) : null}
                                       </>
@@ -208,10 +260,14 @@ export default function AppointmentForm() {
 
                         <button
                           type="button"
-                          onClick={() => setShowNewCustomerForm(!showNewCustomerForm)}
+                          onClick={() =>
+                            setShowNewCustomerForm(!showNewCustomerForm)
+                          }
                           className="mt-2 text-sm text-indigo-600 hover:text-indigo-500"
                         >
-                          {showNewCustomerForm ? "Cancel new customer" : "Add new customer"}
+                          {showNewCustomerForm
+                            ? "Cancel new customer"
+                            : "Add new customer"}
                         </button>
                       </div>
 
@@ -219,7 +275,10 @@ export default function AppointmentForm() {
                       {showNewCustomerForm && (
                         <div className="border-t border-gray-200 pt-4 space-y-4">
                           <div>
-                            <label htmlFor="full-name" className="block text-sm font-medium leading-6 text-gray-900">
+                            <label
+                              htmlFor="full-name"
+                              className="block text-sm font-medium leading-6 text-gray-900"
+                            >
                               Full name
                             </label>
                             <div className="mt-2">
@@ -228,7 +287,9 @@ export default function AppointmentForm() {
                                 name="full-name"
                                 id="full-name"
                                 value={newCustomerName}
-                                onChange={(e) => setNewCustomerName(e.target.value)}
+                                onChange={(e) =>
+                                  setNewCustomerName(e.target.value)
+                                }
                                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                 placeholder="John Doe"
                               />
@@ -236,7 +297,10 @@ export default function AppointmentForm() {
                           </div>
 
                           <div>
-                            <label htmlFor="phone" className="block text-sm font-medium leading-6 text-gray-900">
+                            <label
+                              htmlFor="phone"
+                              className="block text-sm font-medium leading-6 text-gray-900"
+                            >
                               Phone number
                             </label>
                             <div className="mt-2">
@@ -245,9 +309,11 @@ export default function AppointmentForm() {
                                 name="phone"
                                 id="phone"
                                 value={newCustomerPhone}
-                                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                                onChange={(e) =>
+                                  setNewCustomerPhone(e.target.value)
+                                }
                                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                placeholder="+1 (555) 987-6543"
+                                placeholder="07999999988"
                               />
                             </div>
                           </div>
@@ -255,17 +321,26 @@ export default function AppointmentForm() {
                           <button
                             type="button"
                             onClick={handleCreateCustomer}
-                            disabled={createCustomerMutation.isPending || !newCustomerName || !newCustomerPhone}
+                            disabled={
+                              createCustomerMutation.isPending ||
+                              !newCustomerName ||
+                              !newCustomerPhone
+                            }
                             className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
+                            {createCustomerMutation.isPending
+                              ? "Creating..."
+                              : "Create Customer"}
                           </button>
                         </div>
                       )}
 
                       {/* Column Selection */}
                       <div>
-                        <label htmlFor="column" className="block text-sm font-medium leading-6 text-gray-900">
+                        <label
+                          htmlFor="column"
+                          className="block text-sm font-medium leading-6 text-gray-900"
+                        >
                           Column
                         </label>
                         <div className="mt-2">
@@ -273,7 +348,9 @@ export default function AppointmentForm() {
                             id="column"
                             name="column"
                             value={columnId}
-                            onChange={(e) => setColumnId(Number(e.target.value))}
+                            onChange={(e) =>
+                              setColumnId(Number(e.target.value))
+                            }
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                           >
                             {[1, 2, 3, 4, 5].map((col) => (
@@ -287,7 +364,10 @@ export default function AppointmentForm() {
 
                       {/* Date Selection */}
                       <div>
-                        <label htmlFor="date" className="block text-sm font-medium leading-6 text-gray-900">
+                        <label
+                          htmlFor="date"
+                          className="block text-sm font-medium leading-6 text-gray-900"
+                        >
                           Date
                         </label>
                         <div className="mt-2">
@@ -304,7 +384,10 @@ export default function AppointmentForm() {
 
                       {/* Time Selection */}
                       <div>
-                        <label htmlFor="time" className="block text-sm font-medium leading-6 text-gray-900">
+                        <label
+                          htmlFor="time"
+                          className="block text-sm font-medium leading-6 text-gray-900"
+                        >
                           Time
                         </label>
                         <div className="mt-2">
@@ -326,7 +409,10 @@ export default function AppointmentForm() {
 
                       {/* Comment */}
                       <div>
-                        <label htmlFor="comment" className="block text-sm font-medium leading-6 text-gray-900">
+                        <label
+                          htmlFor="comment"
+                          className="block text-sm font-medium leading-6 text-gray-900"
+                        >
                           Comment
                         </label>
                         <div className="mt-2">
@@ -352,7 +438,9 @@ export default function AppointmentForm() {
                     disabled={createAppointmentMutation.isPending}
                     className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {createAppointmentMutation.isPending ? "Creating..." : "Add Appointment"}
+                    {createAppointmentMutation.isPending
+                      ? "Creating..."
+                      : "Add Appointment"}
                   </button>
                   <button
                     type="button"
@@ -362,6 +450,24 @@ export default function AppointmentForm() {
                     Cancel
                   </button>
                 </div>
+
+                {/* Single Alert Component for all notifications */}
+                {alertState.show && (
+                  <div className="mt-4">
+                    <Alert
+                      show={alertState.show}
+                      type={alertState.type}
+                      message={alertState.message}
+                      onDismiss={() =>
+                        setAlertState({
+                          show: false,
+                          type: "success",
+                          message: "",
+                        })
+                      }
+                    />
+                  </div>
+                )}
               </Dialog.Panel>
             </Transition.Child>
           </div>
