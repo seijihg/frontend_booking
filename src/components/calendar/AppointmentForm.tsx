@@ -12,7 +12,6 @@ import dayjs from "dayjs";
 import Alert from "@/components/common/Alert";
 import CustomerSearchSelect from "@/components/forms/CustomerSearchSelect";
 
-
 export default function AppointmentForm() {
   const { isAppointmentFormOpen, setAppointmentFormOpen, selectedColumnId } =
     useAppointmentStore();
@@ -25,6 +24,7 @@ export default function AppointmentForm() {
     dayjs().format("YYYY-MM-DD")
   );
   const [selectedTime, setSelectedTime] = useState("09:00");
+  const [selectedEndTime, setSelectedEndTime] = useState("10:00");
   const [comment, setComment] = useState("");
   const [columnId, setColumnId] = useState<number>(selectedColumnId || 1);
 
@@ -52,6 +52,7 @@ export default function AppointmentForm() {
     setShowNewCustomerForm(false);
     setSelectedDate(dayjs().format("YYYY-MM-DD"));
     setSelectedTime("09:00");
+    setSelectedEndTime("10:00");
     setComment("");
     setNewCustomerName("");
     setNewCustomerPhone("");
@@ -93,11 +94,13 @@ export default function AppointmentForm() {
     }
 
     const appointmentDateTime = `${selectedDate}T${selectedTime}:00Z`;
+    const appointmentEndDateTime = `${selectedDate}T${selectedEndTime}:00Z`;
 
     const payload = {
       salon: user.salon,
       user: user.id,
       appointment_time: appointmentDateTime,
+      end_time: appointmentEndDateTime,
       customer: selectedCustomer.id,
       comment: comment,
       column_id: columnId,
@@ -106,6 +109,7 @@ export default function AppointmentForm() {
     try {
       await createAppointmentMutation.mutateAsync(payload);
       showAlert("success", "Appointment created successfully!");
+      debugger;
       // Delay closing to show success message
       setTimeout(() => {
         handleClose();
@@ -315,14 +319,57 @@ export default function AppointmentForm() {
                           htmlFor="time"
                           className="block text-sm font-medium leading-6 text-gray-900"
                         >
-                          Time
+                          Start Time
                         </label>
                         <div className="mt-2">
                           <select
                             id="time"
                             name="time"
                             value={selectedTime}
-                            onChange={(e) => setSelectedTime(e.target.value)}
+                            onChange={(e) => {
+                              const newStartTime = e.target.value;
+                              setSelectedTime(newStartTime);
+
+                              // Auto-update end time to be 1 hour after start time
+                              const [hours, minutes] = newStartTime
+                                .split(":")
+                                .map(Number);
+                              const endHours = hours + 1;
+                              if (endHours < 21) {
+                                setSelectedEndTime(
+                                  `${endHours
+                                    .toString()
+                                    .padStart(2, "0")}:${minutes
+                                    .toString()
+                                    .padStart(2, "0")}`
+                                );
+                              }
+                            }}
+                            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                          >
+                            {timeSlots.map((time) => (
+                              <option key={time} value={time}>
+                                {time}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* End Time Selection */}
+                      <div>
+                        <label
+                          htmlFor="end-time"
+                          className="block text-sm font-medium leading-6 text-gray-900"
+                        >
+                          End Time
+                        </label>
+                        <div className="mt-2">
+                          <select
+                            id="end-time"
+                            name="end-time"
+                            value={selectedEndTime}
+                            onChange={(e) => setSelectedEndTime(e.target.value)}
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                           >
                             {timeSlots.map((time) => (

@@ -40,10 +40,11 @@ export default function CalendarView() {
     return bookings.map((booking: BookingData) => {
       // Parse as UTC and keep in UTC (don't convert to local time)
       const appointmentDate = dayjs.utc(booking.appointment_time);
+      const appointmentEndTime = dayjs.utc(booking.end_time);
+
       const startTime = appointmentDate.format("HH:mm");
-      // Assume 1 hour duration for now
-      const endTime = appointmentDate.add(1, "hour").format("HH:mm");
-      console.log(booking);
+      const endTime = appointmentEndTime.format("HH:mm");
+
       return {
         id: booking.id.toString(),
         date: appointmentDate.format("YYYY-MM-DD"),

@@ -101,6 +101,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
                   id={apt.id}
                   title={apt.title}
                   startTime={apt.startTime}
+                  endTime={apt.endTime}
                   date={apt.date || selectedDate}
                   gridRow={gridRow}
                   gridColumn={gridColumn}
