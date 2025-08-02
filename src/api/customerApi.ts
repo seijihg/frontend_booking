@@ -1,6 +1,6 @@
 export const getCustomers = async () => {
   const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `users/customers`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   // Recommendation: handle errors
@@ -17,14 +17,17 @@ export const createCustomer = async (data: {
   phone_number: string;
   salon: number;
 }) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}users/customers`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}users/customers/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
 
   if (!res.ok) {
     // This will activate the closest `error.js` Error Boundary
