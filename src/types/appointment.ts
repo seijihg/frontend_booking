@@ -12,6 +12,7 @@ export interface BookingData {
   created: string;
   modified: string;
   appointment_time: string;
+  end_time: string;
   comment: string;
   task_id: string;
   salon: number;
@@ -24,6 +25,7 @@ export interface AppointmentPayload {
   salon: number;
   user: number;
   appointment_time: string;
+  end_time: string;
   customer: number;
   comment: string;
   column_id: number;
