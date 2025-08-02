@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import AppointmentSlot, { getColorScheme } from "./AppointmentSlot";
+import AppointmentSlotWrapper from "./AppointmentSlotWrapper";
 import AppointmentDetailsModal from "./AppointmentDetailsModal";
 import { Appointment } from "@/types/appointment";
 import { Customer } from "@/types/customer";
@@ -9,14 +9,12 @@ import { Customer } from "@/types/customer";
 interface DayViewWithSlotsProps {
   appointments: Appointment[];
   selectedDate: string;
-  customers?: Customer[];
   onSlotSelect?: (startTime: string, endTime: string) => void;
 }
 
 const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
   appointments,
   selectedDate,
-  customers = [],
 }) => {
   const [selectedAppointment, setSelectedAppointment] = useState<{
     appointment: Appointment;
@@ -99,34 +97,23 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
               const endRow = (endHour - 7) * 4 + Math.floor(endMinute / 15) + 1;
               const span = endRow - startRow;
 
-              const colorScheme = getColorScheme(index);
               const gridRow = `${startRow} / span ${span}`;
 
               // Determine column position (default to column 1 if not specified)
               const columnId = apt.column_id || 1;
               const gridColumn = columnId;
 
-              // Find the customer object if customer ID exists
-              const customer = apt.customer
-                ? customers.find((c) => c.id === apt.customer)
-                : undefined;
-              console.log(appointments);
               return (
-                <AppointmentSlot
+                <AppointmentSlotWrapper
                   key={apt.id}
-                  id={apt.id}
-                  title={apt.title}
-                  startTime={apt.startTime}
-                  endTime={apt.endTime}
-                  date={apt.date || selectedDate}
+                  appointment={apt}
                   gridRow={gridRow}
                   gridColumn={gridColumn}
-                  colorScheme={colorScheme}
-                  customer={customer}
-                  comment={apt.comment}
-                  onClick={(position) => {
+                  selectedDate={selectedDate}
+                  colorSchemeIndex={index}
+                  onClick={(appointment, customer, position, colorScheme) => {
                     setSelectedAppointment({
-                      appointment: apt,
+                      appointment,
                       customer,
                       position,
                       colorScheme: {
