@@ -12,6 +12,23 @@ export const getCustomers = async () => {
   return res.json();
 };
 
+export const getCustomer = async (customer: number) => {
+  const res = await fetch(
+    process.env.NEXT_PUBLIC_API_URL + `users/customers/${customer}/`,
+    {
+      credentials: "include",
+    }
+  );
+
+  // Recommendation: handle errors
+  if (!res.ok) {
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error("Failed to fetch a customer");
+  }
+
+  return res.json();
+};
+
 export const createCustomer = async (data: {
   full_name: string;
   phone_number: string;
