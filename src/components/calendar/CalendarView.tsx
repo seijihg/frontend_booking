@@ -14,6 +14,7 @@ import DayViewWithSlots from "./DayViewWithSlots";
 import AppointmentForm from "./AppointmentForm";
 import ViewDropdown from "@/components/utils/ViewDropdown";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useCustomers } from "@/hooks/useCustomers";
 import { Appointment, BookingData } from "@/types/appointment";
 
 // Extend dayjs with UTC plugin
@@ -32,6 +33,9 @@ export default function CalendarView() {
 
   // Fetch appointments using React Query
   const { data: bookings = [], isLoading, error } = useAppointments();
+  
+  // Fetch customers using React Query
+  const { data: customers = [] } = useCustomers();
 
   // Transform booking data to appointment format
   const appointments = useMemo<Appointment[]>(() => {
@@ -52,6 +56,8 @@ export default function CalendarView() {
         endTime: endTime,
         title: booking.comment || `Appointment #${booking.id}`,
         column_id: booking.column_id,
+        customer: booking.customer,
+        comment: booking.comment,
       };
     });
   }, [bookings]);
@@ -262,6 +268,7 @@ export default function CalendarView() {
                 <DayViewWithSlots
                   appointments={dailyAppointments}
                   selectedDate={selectedDate.format("YYYY-MM-DD")}
+                  customers={customers}
                 />
               )}
               {currentView === "week" && (
