@@ -5,6 +5,8 @@ export interface Appointment {
   endTime: string;
   title: string;
   column_id?: number;
+  customer?: number;
+  comment?: string;
 }
 
 export interface BookingData {

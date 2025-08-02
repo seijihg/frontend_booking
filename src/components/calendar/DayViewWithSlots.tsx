@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
-import AppointmentSlot, { getColorScheme } from "./AppointmentSlot";
+import React, { useState } from "react";
+import AppointmentSlotWrapper from "./AppointmentSlotWrapper";
+import AppointmentDetailsModal from "./AppointmentDetailsModal";
 import { Appointment } from "@/types/appointment";
+import { Customer } from "@/types/customer";
 
 interface DayViewWithSlotsProps {
   appointments: Appointment[];
@@ -14,6 +16,13 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
   appointments,
   selectedDate,
 }) => {
+  const [selectedAppointment, setSelectedAppointment] = useState<{
+    appointment: Appointment;
+    customer?: Customer;
+    position: { top: number; left: number; width: number; height: number };
+    colorScheme: { bg: string; text: string };
+  } | null>(null);
+
   // Only show business hours: 7AM to 9PM (7:00 - 21:00)
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
 
@@ -88,7 +97,6 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
               const endRow = (endHour - 7) * 4 + Math.floor(endMinute / 15) + 1;
               const span = endRow - startRow;
 
-              const colorScheme = getColorScheme(index);
               const gridRow = `${startRow} / span ${span}`;
 
               // Determine column position (default to column 1 if not specified)
@@ -96,22 +104,51 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
               const gridColumn = columnId;
 
               return (
-                <AppointmentSlot
+                <AppointmentSlotWrapper
                   key={apt.id}
-                  id={apt.id}
-                  title={apt.title}
-                  startTime={apt.startTime}
-                  endTime={apt.endTime}
-                  date={apt.date || selectedDate}
+                  appointment={apt}
                   gridRow={gridRow}
                   gridColumn={gridColumn}
-                  colorScheme={colorScheme}
+                  selectedDate={selectedDate}
+                  colorSchemeIndex={index}
+                  onClick={(appointment, customer, position, colorScheme) => {
+                    setSelectedAppointment({
+                      appointment,
+                      customer,
+                      position,
+                      colorScheme: {
+                        bg: colorScheme.bg,
+                        text: colorScheme.text,
+                      },
+                    });
+                  }}
                 />
               );
             })}
           </ol>
         </div>
       </div>
+
+      {/* Appointment Details Modal */}
+      <AppointmentDetailsModal
+        isOpen={!!selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+        appointment={
+          selectedAppointment
+            ? {
+                id: selectedAppointment.appointment.id,
+                title: selectedAppointment.appointment.title,
+                startTime: selectedAppointment.appointment.startTime,
+                endTime: selectedAppointment.appointment.endTime,
+                date: selectedAppointment.appointment.date || selectedDate,
+                customer: selectedAppointment.customer,
+                comment: selectedAppointment.appointment.comment,
+              }
+            : null
+        }
+        position={selectedAppointment?.position}
+        colorScheme={selectedAppointment?.colorScheme}
+      />
     </div>
   );
 };

@@ -1,10 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCustomers, createCustomer } from "@/api/customerApi";
+import { getCustomers, getCustomer, createCustomer } from "@/api/customerApi";
 
 export const useCustomers = () => {
   return useQuery({
     queryKey: ["customers"],
     queryFn: getCustomers,
+  });
+};
+
+export const useCustomer = (customerId: number | undefined) => {
+  return useQuery({
+    queryKey: ["customer", customerId],
+    queryFn: () => getCustomer(customerId!),
+    enabled: !!customerId,
   });
 };
 

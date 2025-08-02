@@ -52,6 +52,8 @@ export default function CalendarView() {
         endTime: endTime,
         title: booking.comment || `Appointment #${booking.id}`,
         column_id: booking.column_id,
+        customer: booking.customer,
+        comment: booking.comment,
       };
     });
   }, [bookings]);

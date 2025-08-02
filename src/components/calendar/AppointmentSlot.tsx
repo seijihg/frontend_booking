@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
+import { motion } from "framer-motion";
+import { Customer } from "@/types/customer";
 
 interface AppointmentSlotProps {
   id: string;
@@ -17,6 +19,9 @@ interface AppointmentSlotProps {
     subtext: string;
     hoverSubtext: string;
   };
+  customer?: Customer;
+  comment?: string;
+  onClick?: (position: { top: number; left: number; width: number; height: number }) => void;
 }
 
 const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
@@ -28,7 +33,10 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
   gridRow,
   gridColumn = 1,
   colorScheme,
+  onClick,
 }) => {
+  const slotRef = useRef<HTMLDivElement>(null);
+
   // Calculate the duration and grid row span
   const calculateGridRowSpan = () => {
     const [startHour, startMinute] = startTime.split(":").map(Number);
@@ -47,8 +55,27 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
     // Parse the gridRow to get the starting row
     const startRow = parseInt(gridRow);
 
-    // Return the grid row span (e.g., "2 / 6" for a 1-hour appointment starting at row 2)
+    // Return the grid row span (e.g., "2 / span 4" for a 1-hour appointment starting at row 2)
     return `${startRow} / span ${rowSpan}`;
+  };
+
+  const handleClick = () => {
+    if (onClick && slotRef.current) {
+      const rect = slotRef.current.getBoundingClientRect();
+      onClick({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    }
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleClick();
+    }
   };
 
   return (
@@ -56,9 +83,15 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
       style={{ gridRow: calculateGridRowSpan(), gridColumn }}
       className="relative mt-px flex"
     >
-      <a
-        href="#"
-        className={`group absolute inset-1 flex flex-col overflow-y-auto rounded-lg ${colorScheme.bg} p-2 text-xs/5 ${colorScheme.hover}`}
+      <motion.div
+        ref={slotRef}
+        layoutId={`appointment-${id}`}
+        onClick={handleClick}
+        onKeyPress={handleKeyPress}
+        className={`group absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg ${colorScheme.bg} p-2 text-xs/5 ${colorScheme.hover} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+        tabIndex={0}
+        role="button"
+        aria-label={`Appointment: ${title} from ${startTime} to ${endTime}. Click to view details`}
       >
         <p className={`order-1 font-semibold ${colorScheme.text}`}>{title}</p>
         <p className={`${colorScheme.subtext} ${colorScheme.hoverSubtext}`}>
@@ -66,7 +99,7 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
             {startTime} - {endTime}
           </time>
         </p>
-      </a>
+      </motion.div>
     </li>
   );
 };

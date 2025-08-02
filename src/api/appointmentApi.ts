@@ -31,3 +31,25 @@ export const getAppointments = async () => {
 
   return res.json();
 };
+
+export const deleteAppointment = async (appointmentId: number) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}appointments/${appointmentId}/`,
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  // Handle errors by triggering the nearest error boundary
+  if (!res.ok) {
+    throw new Error("Failed to delete appointment");
+  }
+
+  // DELETE returns 204 No Content, so we don't need to parse JSON
+  // Just return success
+  return { success: true };
+};
