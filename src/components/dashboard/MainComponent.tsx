@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import CalendarView from "@/components/calendar/CalendarView";
 import NavBar from "@/components/dashboard/navigation_bar/NavBar";
 import { useUserStore } from "@/stores/userStore";
-import ProfileView from "../profile/ProfileView";
+import DashboardView from "../profile/DashboardView";
 
 type ViewType = "dashboard" | "calendar" | "team" | "projects";
 
@@ -27,7 +27,7 @@ export default function MainComponent() {
   const renderContent = () => {
     switch (currentView) {
       case "dashboard":
-        return <ProfileView />;
+        return <DashboardView />;
       case "calendar":
         return <CalendarView />;
       case "team":
@@ -39,7 +39,7 @@ export default function MainComponent() {
           <div className="p-8 text-gray-500">Projects view coming soon...</div>
         );
       default:
-        return <ProfileView />;
+        return <DashboardView />;
     }
   };
 
