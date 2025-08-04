@@ -48,12 +48,6 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
       view: "calendar" as ViewType,
       current: currentView === "calendar",
     },
-    { name: "Team", view: "team" as ViewType, current: currentView === "team" },
-    {
-      name: "Projects",
-      view: "projects" as ViewType,
-      current: currentView === "projects",
-    },
   ];
 
   const handleSignOut = async () => {
@@ -89,18 +83,6 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                       <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
                     )}
                   </Disclosure.Button>
-                </div>
-                <div className="flex flex-shrink-0 items-center">
-                  <img
-                    className="block h-8 w-auto lg:hidden"
-                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-                    alt="Your Company"
-                  />
-                  <img
-                    className="hidden h-8 w-auto lg:block"
-                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-                    alt="Your Company"
-                  />
                 </div>
                 <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
                   {navigation.map((item) => (

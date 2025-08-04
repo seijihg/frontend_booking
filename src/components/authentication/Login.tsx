@@ -59,7 +59,8 @@ function LoginForm() {
 
   const router = useRouter();
 
-  const { isLoading, isError, error, mutate } = useMutation(loginUser, {
+  const { isPending, isError, error, mutate } = useMutation({
+    mutationFn: loginUser,
     onSuccess: (data) => {
       Cookies.set("token", data["access_token"]);
       useUserStore.setState({ user: data.user });
