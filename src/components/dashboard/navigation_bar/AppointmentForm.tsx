@@ -6,10 +6,10 @@ import { Customer } from "@/types/customer";
 import { getCustomers } from "@/api/customerApi";
 
 export default function AppointmentForm() {
-  const { isLoading, error, data } = useQuery<Customer[], Error>(
-    ["customers"],
-    getCustomers
-  );
+  const { isLoading, error, data } = useQuery<Customer[], Error>({
+    queryKey: ["customers"],
+    queryFn: getCustomers
+  });
 
   return (
     <>

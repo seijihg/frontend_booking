@@ -93,6 +93,12 @@ export default function AppointmentForm() {
       return;
     }
 
+    // Check if user has required fields
+    if (user.salon === null || user.id === null) {
+      showAlert("error", "User salon or ID is not set. Please check your profile settings.");
+      return;
+    }
+
     const appointmentDateTime = `${selectedDate}T${selectedTime}:00Z`;
     const appointmentEndDateTime = `${selectedDate}T${selectedEndTime}:00Z`;
 
@@ -109,7 +115,6 @@ export default function AppointmentForm() {
     try {
       await createAppointmentMutation.mutateAsync(payload);
       showAlert("success", "Appointment created successfully!");
-      debugger;
       // Delay closing to show success message
       setTimeout(() => {
         handleClose();
