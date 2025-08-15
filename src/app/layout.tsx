@@ -3,6 +3,7 @@ import "@/styles/globals.scss";
 import UserStoreInitializer from "@/components/UserStoreInitiliazer";
 import Providers from "@/utils/provider";
 import getUser from "@/api/userApi";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata = {
   title: "Create Next App",
@@ -24,6 +25,7 @@ export default async function RootLayout({
           {user && <UserStoreInitializer user={user} />}
           {children}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
