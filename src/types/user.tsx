@@ -1,12 +1,17 @@
 export interface User {
-  id: number | null;
+  id: number;
   phone_number: string;
-  last_login: string;
+  salons: number[];
+  last_login: string | null;
   first_name: string;
   last_name: string;
   is_staff: boolean;
+  is_active: boolean;
+  date_joined: string;
+  created: string;
+  modified: string;
   email: string;
   is_owner: boolean;
-  salon: number | null;
+  full_name: string;
   addresses: number[];
 }
