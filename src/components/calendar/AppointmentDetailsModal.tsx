@@ -11,7 +11,6 @@ interface AppointmentDetailsModalProps {
   onClose: () => void;
   appointment: {
     id: string;
-    title: string;
     startTime: string;
     endTime: string;
     date: string;

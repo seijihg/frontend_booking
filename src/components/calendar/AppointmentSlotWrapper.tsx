@@ -8,7 +8,6 @@ import { getColorScheme } from "./AppointmentSlot";
 interface AppointmentSlotWrapperProps {
   appointment: {
     id: string;
-    title: string;
     startTime: string;
     endTime: string;
     date?: string;
