@@ -134,7 +134,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
         isOpen={!!selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
         appointment={
-          selectedAppointment
+          selectedAppointment && selectedAppointment.customer
             ? {
                 id: selectedAppointment.appointment.id,
                 startTime: selectedAppointment.appointment.startTime,
