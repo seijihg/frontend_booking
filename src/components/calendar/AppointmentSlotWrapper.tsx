@@ -37,17 +37,23 @@ const AppointmentSlotWrapper: React.FC<AppointmentSlotWrapperProps> = ({
 }) => {
   // Fetch customer data if customer ID exists
   const { data: customer, isLoading } = useCustomer(appointment.customer);
-  
+
   const colorScheme = getColorScheme(colorSchemeIndex);
 
-  const handleClick = (position: { top: number; left: number; width: number; height: number }) => {
+  const handleClick = (position: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }) => {
     onClick(appointment, customer, position, colorScheme);
   };
 
   return (
     <AppointmentSlot
       id={appointment.id}
-      title={appointment.title}
+      customer={customer}
+      comment={appointment.comment}
       startTime={appointment.startTime}
       endTime={appointment.endTime}
       date={appointment.date || selectedDate}

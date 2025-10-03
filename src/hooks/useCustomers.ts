@@ -20,7 +20,7 @@ export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { full_name: string; phone_number: string; salon: number }) => 
+    mutationFn: (data: { full_name: string; phone_number: string; salon_ids: number[] }) =>
       createCustomer(data),
     onSuccess: () => {
       // Invalidate and refetch customers

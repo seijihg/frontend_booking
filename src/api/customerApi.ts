@@ -1,5 +1,5 @@
 export const getCustomers = async () => {
-  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `users/customers`, {
+  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `customers`, {
     credentials: "include",
   });
 
@@ -14,7 +14,7 @@ export const getCustomers = async () => {
 
 export const getCustomer = async (customer: number) => {
   const res = await fetch(
-    process.env.NEXT_PUBLIC_API_URL + `users/customers/${customer}/`,
+    process.env.NEXT_PUBLIC_API_URL + `customers/${customer}/`,
     {
       credentials: "include",
     }
@@ -32,19 +32,16 @@ export const getCustomer = async (customer: number) => {
 export const createCustomer = async (data: {
   full_name: string;
   phone_number: string;
-  salon: number;
+  salon_ids: number[];
 }) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}users/customers/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(data),
-    }
-  );
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}customers/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
 
   if (!res.ok) {
     // This will activate the closest `error.js` Error Boundary

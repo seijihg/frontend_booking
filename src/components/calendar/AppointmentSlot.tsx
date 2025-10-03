@@ -6,7 +6,6 @@ import { Customer } from "@/types/customer";
 
 interface AppointmentSlotProps {
   id: string;
-  title: string;
   startTime: string;
   endTime: string;
   date?: string;
@@ -19,20 +18,26 @@ interface AppointmentSlotProps {
     subtext: string;
     hoverSubtext: string;
   };
-  customer?: Customer;
+  customer: Customer;
   comment?: string;
-  onClick?: (position: { top: number; left: number; width: number; height: number }) => void;
+  onClick?: (position: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }) => void;
 }
 
 const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
   id,
-  title,
   startTime,
   endTime,
   date,
   gridRow,
   gridColumn = 1,
   colorScheme,
+  customer,
+  comment,
   onClick,
 }) => {
   const slotRef = useRef<HTMLDivElement>(null);
@@ -91,9 +96,12 @@ const AppointmentSlot: React.FC<AppointmentSlotProps> = ({
         className={`group absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg ${colorScheme.bg} p-2 text-xs/5 ${colorScheme.hover} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
         tabIndex={0}
         role="button"
-        aria-label={`Appointment: ${title} from ${startTime} to ${endTime}. Click to view details`}
+        aria-label={`Appointment: ${customer?.full_name} from ${startTime} to ${endTime}. Click to view details`}
       >
-        <p className={`order-1 font-semibold ${colorScheme.text}`}>{title}</p>
+        <p className={`order-1 font-semibold ${colorScheme.text}`}>
+          {customer?.full_name}
+        </p>
+        <p className={`order-1 font-semibold ${colorScheme.text}`}>{comment}</p>
         <p className={`${colorScheme.subtext} ${colorScheme.hoverSubtext}`}>
           <time dateTime={`${date}T${startTime}`}>
             {startTime} - {endTime}
