@@ -50,7 +50,6 @@ export default function CalendarView() {
         date: appointmentDate.format("YYYY-MM-DD"),
         startTime: startTime,
         endTime: endTime,
-        title: booking.comment || `Appointment #${booking.id}`,
         column_id: booking.column_id,
         customer: booking.customer,
         comment: booking.comment,

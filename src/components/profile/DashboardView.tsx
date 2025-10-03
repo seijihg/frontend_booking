@@ -1,16 +1,28 @@
 "use client";
 
-import { Building2, MapPin, Phone, Loader2, User, Calendar } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Loader2,
+  User,
+  Calendar,
+} from "lucide-react";
 import { useGetSalon } from "@/hooks/useSalon";
 import { useUserStore } from "@/stores/userStore";
 
 export default function DashboardView() {
   // Get the salon ID from the user in global state
   const { user } = useUserStore();
-  const salonId = user?.salon;
+  const salonId = user?.salons[0];
 
   // Get the salon data using the salon ID
-  const { data: salonData, isLoading, isError, error } = useGetSalon(salonId || 0, {
+  const {
+    data: salonData,
+    isLoading,
+    isError,
+    error,
+  } = useGetSalon(salonId || 0, {
     enabled: !!salonId, // Only fetch if we have a salon ID
   });
 
@@ -22,7 +34,9 @@ export default function DashboardView() {
       <div className="min-h-full bg-gray-50 py-8 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-gray-500 mx-auto" />
-          <p className="mt-2 text-sm text-gray-500">Loading business information...</p>
+          <p className="mt-2 text-sm text-gray-500">
+            Loading business information...
+          </p>
         </div>
       </div>
     );
@@ -34,7 +48,9 @@ export default function DashboardView() {
       <div className="min-h-full bg-gray-50 py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <p className="text-red-800">Error loading business information: {error?.message}</p>
+            <p className="text-red-800">
+              Error loading business information: {error?.message}
+            </p>
           </div>
         </div>
       </div>
@@ -48,9 +64,11 @@ export default function DashboardView() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-8 text-center">
             <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-lg font-medium text-gray-900 mb-2">No Business Information</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-2">
+              No Business Information
+            </h2>
             <p className="text-sm text-gray-500">
-              {!salonId 
+              {!salonId
                 ? "You are not associated with any salon. Please contact your administrator."
                 : "Unable to load salon information. Please try again later."}
             </p>
@@ -67,7 +85,7 @@ export default function DashboardView() {
     "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
   ];
-  
+
   // Select a random image based on salon ID
   const selectedImage = businessImages[salon.id % businessImages.length];
 
@@ -90,7 +108,11 @@ export default function DashboardView() {
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                   <h2 className="text-2xl font-bold mb-2">{salon.name}</h2>
                   <p className="text-sm opacity-90">
-                    {user?.is_owner ? 'Business Owner' : user?.is_staff ? 'Staff Member' : 'Customer'}
+                    {user?.is_owner
+                      ? "Business Owner"
+                      : user?.is_staff
+                      ? "Staff Member"
+                      : "Customer"}
                   </p>
                 </div>
               </div>
@@ -116,12 +138,18 @@ export default function DashboardView() {
                       <MapPin className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          Business Address{salon.addresses.length > 1 ? 'es' : ''}
+                          Business Address
+                          {salon.addresses.length > 1 ? "es" : ""}
                         </h3>
                         {salon.addresses.map((address) => (
-                          <address key={address.id} className="text-sm text-gray-600 not-italic mb-3">
+                          <address
+                            key={address.id}
+                            className="text-sm text-gray-600 not-italic mb-3"
+                          >
                             <p>{address.street}</p>
-                            <p>{address.city}, {address.postal_code}</p>
+                            <p>
+                              {address.city}, {address.postal_code}
+                            </p>
                           </address>
                         ))}
                       </div>
@@ -137,7 +165,9 @@ export default function DashboardView() {
                       <h3 className="text-sm font-medium text-gray-900 mb-2">
                         Contact Information
                       </h3>
-                      <p className="text-sm text-gray-600">{salon.phone_number}</p>
+                      <p className="text-sm text-gray-600">
+                        {salon.phone_number}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -153,13 +183,16 @@ export default function DashboardView() {
                         </h3>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p>
-                            <span className="font-medium">Name:</span> {user.first_name} {user.last_name}
+                            <span className="font-medium">Name:</span>{" "}
+                            {user.first_name} {user.last_name}
                           </p>
                           <p>
-                            <span className="font-medium">Email:</span> {user.email}
+                            <span className="font-medium">Email:</span>{" "}
+                            {user.email}
                           </p>
                           <p>
-                            <span className="font-medium">Phone:</span> {user.phone_number}
+                            <span className="font-medium">Phone:</span>{" "}
+                            {user.phone_number}
                           </p>
                         </div>
                       </div>
@@ -177,23 +210,27 @@ export default function DashboardView() {
                       </h3>
                       <div className="text-sm text-gray-600 space-y-1">
                         <p>
-                          <span className="font-medium">Salon ID:</span> {salon.id}
+                          <span className="font-medium">Salon ID:</span>{" "}
+                          {salon.id}
                         </p>
                         <p>
-                          <span className="font-medium">Created:</span>{' '}
-                          {new Date(salon.created).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                          <span className="font-medium">Created:</span>{" "}
+                          {new Date(salon.created).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </p>
                         <p>
-                          <span className="font-medium">Last Updated:</span>{' '}
-                          {new Date(salon.modified).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
+                          <span className="font-medium">Last Updated:</span>{" "}
+                          {new Date(salon.modified).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
                         </p>
                       </div>
                     </div>

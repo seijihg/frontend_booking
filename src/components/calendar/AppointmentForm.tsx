@@ -67,13 +67,13 @@ export default function AppointmentForm() {
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerName || !newCustomerPhone || !user?.salon) return;
+    if (!newCustomerName || !newCustomerPhone || !user?.salons?.[0]) return;
 
     try {
       const newCustomer = await createCustomerMutation.mutateAsync({
         full_name: newCustomerName,
         phone_number: newCustomerPhone,
-        salon: user.salon,
+        salon_ids: [user.salons[0]],
       });
 
       setSelectedCustomer(newCustomer);
@@ -94,7 +94,7 @@ export default function AppointmentForm() {
     }
 
     // Check if user has required fields
-    if (user.salon === null || user.id === null) {
+    if (!user.salons?.[0] || user.id === null) {
       showAlert("error", "User salon or ID is not set. Please check your profile settings.");
       return;
     }
@@ -103,7 +103,7 @@ export default function AppointmentForm() {
     const appointmentEndDateTime = `${selectedDate}T${selectedEndTime}:00Z`;
 
     const payload = {
-      salon: user.salon,
+      salon: user.salons[0],
       user: user.id,
       appointment_time: appointmentDateTime,
       end_time: appointmentEndDateTime,

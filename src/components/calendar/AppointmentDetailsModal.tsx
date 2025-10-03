@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDeleteAppointment } from "@/hooks/useAppointments";
+import { useUserStore } from "@/stores/userStore";
 import { Customer } from "@/types/customer";
 
 interface AppointmentDetailsModalProps {
@@ -10,11 +11,10 @@ interface AppointmentDetailsModalProps {
   onClose: () => void;
   appointment: {
     id: string;
-    title: string;
     startTime: string;
     endTime: string;
-    date?: string;
-    customer?: Customer;
+    date: string;
+    customer: Customer;
     comment?: string;
   } | null;
   position?: { top: number; left: number; width: number; height: number };
@@ -32,6 +32,7 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
   colorScheme = { bg: "bg-white", text: "text-gray-900" },
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserStore();
   const deleteAppointmentMutation = useDeleteAppointment();
 
   // Handle click outside
@@ -171,8 +172,18 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
                   className="absolute right-4 top-4 z-10 rounded-full p-2 hover:bg-gray-100 hover:bg-opacity-10 transition-colors"
                   aria-label="Close appointment details"
                 >
-                  <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-5 w-5 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
 
@@ -182,64 +193,65 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
                     id={`appointment-title-${appointment.id}`}
                     className={`text-lg font-semibold ${colorScheme.text}`}
                   >
-                    {appointment.title}
+                    {appointment.customer.full_name}
                   </h3>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-500">
-                      Time
-                    </span>
-                    <span className="text-sm text-gray-900">
-                      {appointment.startTime} - {appointment.endTime}
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">
+                        Time
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {appointment.startTime} - {appointment.endTime}
+                      </span>
+                    </div>
+
+                    {appointment.date && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">
+                          Date
+                        </span>
+                        <span className="text-sm text-gray-900">
+                          {appointment.date}
+                        </span>
+                      </div>
+                    )}
+
+                    {appointment.customer && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">
+                          Phone Number
+                        </span>
+                        <span className="text-sm text-gray-900">
+                          {appointment.customer.phone_number}
+                        </span>
+                      </div>
+                    )}
+
+                    {appointment.comment && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">
+                          Comment
+                        </span>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {appointment.comment}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {appointment.date && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-500">
-                        Date
-                      </span>
-                      <span className="text-sm text-gray-900">
-                        {appointment.date}
-                      </span>
-                    </div>
-                  )}
-
-                  {appointment.customer && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-500">
-                        Customer
-                      </span>
-                      <span className="text-sm text-gray-900">
-                        {appointment.customer.full_name}
-                      </span>
-                    </div>
-                  )}
-
-                  {appointment.comment && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">
-                        Comment
-                      </span>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {appointment.comment}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Delete button */}
-                <button
-                  onClick={handleDelete}
-                  disabled={deleteAppointmentMutation.isPending}
-                  className="mt-4 w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Delete appointment"
-                >
-                  {deleteAppointmentMutation.isPending
-                    ? "Deleting..."
-                    : "Delete Appointment"}
-                </button>
+                  {
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleteAppointmentMutation.isPending}
+                      className="mt-4 w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Delete appointment"
+                    >
+                      {deleteAppointmentMutation.isPending
+                        ? "Deleting..."
+                        : "Delete Appointment"}
+                    </button>
+                  }
                 </div>
               </motion.div>
             </div>
