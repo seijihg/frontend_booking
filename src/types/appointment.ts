@@ -3,9 +3,8 @@ export interface Appointment {
   date: string;
   startTime: string;
   endTime: string;
-  title: string;
-  column_id?: number;
-  customer?: number;
+  column_id: number;
+  customer: number;
   comment?: string;
 }
 
@@ -16,11 +15,11 @@ export interface BookingData {
   appointment_time: string;
   end_time: string;
   comment: string;
+  column_id: number;
   task_id: string;
   salon: number;
   user: number;
   customer: number;
-  column_id?: number;
 }
 
 export interface AppointmentPayload {
