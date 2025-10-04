@@ -1,5 +1,7 @@
 "use client";
 
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -55,14 +57,13 @@ function LoginForm() {
     formState: { errors },
   } = useForm<IFormInput>({ resolver: yupResolver(schema) });
 
+  const router = useRouter();
+
   const { isPending, isError, error, mutate } = useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
-      // Backend sets HTTP-only cookies via Set-Cookie header
-      // No need to set cookies client-side
       useUserStore.setState({ user: data.user });
-      // Force a full page navigation to ensure server-side auth check runs
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
     },
   });
 
