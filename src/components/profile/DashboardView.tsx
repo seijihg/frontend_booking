@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Building2,
   MapPin,
@@ -7,9 +8,20 @@ import {
   Loader2,
   User,
   Calendar,
+  Bell,
 } from "lucide-react";
-import { useGetSalon } from "@/hooks/useSalon";
+import { useGetSalon, useUpdateSalon } from "@/hooks/useSalon";
 import { useUserStore } from "@/stores/userStore";
+import Alert from "@/components/common/Alert";
+
+// Predefined reminder time options
+const reminderOptions = [
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+  { value: 60, label: "1 hour" },
+  { value: 120, label: "2 hours" },
+  { value: 1440, label: "1 day (24 hours)" },
+];
 
 export default function DashboardView() {
   // Get the salon ID from the user in global state
@@ -27,6 +39,52 @@ export default function DashboardView() {
   });
 
   const salon = salonData;
+
+  // SMS Reminder settings state
+  const [reminderMinutes, setReminderMinutes] = useState<number>(60);
+  const [isEditingReminder, setIsEditingReminder] = useState(false);
+  const [alertState, setAlertState] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({ show: false, type: "success", message: "" });
+
+  // Update salon mutation hook
+  const updateSalonMutation = useUpdateSalon(salonId || 0);
+
+  // Initialize state when salon data loads
+  useEffect(() => {
+    if (salon?.reminder_time_minutes) {
+      setReminderMinutes(salon.reminder_time_minutes);
+    }
+  }, [salon?.reminder_time_minutes]);
+
+  // Handler to save reminder time
+  const handleSaveReminder = async () => {
+    try {
+      await updateSalonMutation.mutateAsync({
+        reminder_time_minutes: reminderMinutes,
+      });
+      setAlertState({
+        show: true,
+        type: "success",
+        message: "SMS reminder time updated successfully!",
+      });
+      setIsEditingReminder(false);
+    } catch (error) {
+      setAlertState({
+        show: true,
+        type: "error",
+        message: "Failed to update SMS reminder time.",
+      });
+    }
+  };
+
+  // Handler to cancel editing
+  const handleCancelEdit = () => {
+    setReminderMinutes(salon?.reminder_time_minutes || 60);
+    setIsEditingReminder(false);
+  };
 
   // Show loading state
   if (isLoading) {
@@ -172,6 +230,102 @@ export default function DashboardView() {
                   </div>
                 </div>
 
+                {/* SMS Reminder Settings Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="flex items-start gap-3">
+                    <Bell className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          SMS Reminder Settings
+                        </h3>
+                        {!isEditingReminder && user?.is_owner && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingReminder(true)}
+                            className="text-sm text-indigo-600 hover:text-indigo-500"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingReminder ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label
+                              htmlFor="reminder-time"
+                              className="block text-sm text-gray-600 mb-2"
+                            >
+                              Send reminder SMS to customers before their
+                              appointment:
+                            </label>
+                            <select
+                              id="reminder-time"
+                              value={reminderMinutes}
+                              onChange={(e) =>
+                                setReminderMinutes(Number(e.target.value))
+                              }
+                              className="block w-full rounded-md border-0 py-2 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                            >
+                              {reminderOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={handleSaveReminder}
+                              disabled={updateSalonMutation.isPending}
+                              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updateSalonMutation.isPending ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                "Save"
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEdit}
+                              disabled={updateSalonMutation.isPending}
+                              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          <p>
+                            Customers receive SMS reminders{" "}
+                            <span className="font-medium">
+                              {reminderOptions.find(
+                                (opt) =>
+                                  opt.value === salon?.reminder_time_minutes
+                              )?.label ||
+                                `${salon?.reminder_time_minutes} minutes`}
+                            </span>{" "}
+                            before their appointment.
+                          </p>
+                          {!user?.is_owner && (
+                            <p className="mt-2 text-xs text-gray-500 italic">
+                              Only business owners can change this setting.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* User Information */}
                 {user && (
                   <div className="border-t border-gray-200 pt-6">
@@ -252,6 +406,21 @@ export default function DashboardView() {
             </div>
           </div>
         </div>
+
+        {/* Alert for feedback */}
+        {alertState.show && (
+          <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+            <Alert
+              show={alertState.show}
+              type={alertState.type}
+              message={alertState.message}
+              onDismiss={() =>
+                setAlertState({ show: false, type: "success", message: "" })
+              }
+              autoHideDuration={5000}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

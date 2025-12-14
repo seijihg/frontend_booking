@@ -14,6 +14,7 @@ export interface Salon {
   name: string;
   addresses: Address[];
   phone_number: string;
+  reminder_time_minutes: number;
   created: string;
   modified: string;
 }
@@ -38,6 +39,7 @@ export interface UpdateSalonRequest {
     postal_code: string;
   }>;
   phone_number?: string;
+  reminder_time_minutes?: number;
 }
 
 // Response interfaces - assuming the API returns the salon directly
@@ -46,6 +48,7 @@ export interface CreateSalonResponse {
   name: string;
   addresses: Address[];
   phone_number: string;
+  reminder_time_minutes: number;
   created: string;
   modified: string;
 }
@@ -56,6 +59,7 @@ export interface GetSalonResponse {
   name: string;
   addresses: Address[];
   phone_number: string;
+  reminder_time_minutes: number;
   created: string;
   modified: string;
 }
