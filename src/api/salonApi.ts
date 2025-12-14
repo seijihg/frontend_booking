@@ -89,7 +89,7 @@ export async function updateSalon(
     credentials: "include",
     body: JSON.stringify(data),
   });
-
+  console.log(data)
   return handleResponse<CreateSalonResponse>(response);
 }
 
