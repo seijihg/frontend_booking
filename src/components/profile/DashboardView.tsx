@@ -11,6 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useGetSalon, useUpdateSalon } from "@/hooks/useSalon";
+import { useUpdateUser } from "@/hooks/useUser";
 import { useUserStore } from "@/stores/userStore";
 import Alert from "@/components/common/Alert";
 
@@ -49,15 +50,67 @@ export default function DashboardView() {
     message: string;
   }>({ show: false, type: "success", message: "" });
 
+  // Address editing state
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [editAddress, setEditAddress] = useState({
+    street: "",
+    city: "",
+    postal_code: "",
+  });
+
+  // Phone editing state
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+
+  // Profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editProfile, setEditProfile] = useState({
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+  });
+
   // Update salon mutation hook
   const updateSalonMutation = useUpdateSalon(salonId || 0);
 
-  // Initialize state when salon data loads
+  // Update user mutation hook
+  const updateUserMutation = useUpdateUser(user?.id || 0);
+
+  // Initialize reminder state when salon data loads
   useEffect(() => {
     if (salon?.reminder_time_minutes) {
       setReminderMinutes(salon.reminder_time_minutes);
     }
   }, [salon?.reminder_time_minutes]);
+
+  // Initialize address form when salon data loads
+  useEffect(() => {
+    if (salon?.addresses?.[0]) {
+      setEditAddress({
+        street: salon.addresses[0].street || "",
+        city: salon.addresses[0].city || "",
+        postal_code: salon.addresses[0].postal_code || "",
+      });
+    }
+  }, [salon?.addresses]);
+
+  // Initialize phone form when salon data loads
+  useEffect(() => {
+    if (salon?.phone_number) {
+      setEditPhone(salon.phone_number);
+    }
+  }, [salon?.phone_number]);
+
+  // Initialize profile form when user data loads
+  useEffect(() => {
+    if (user) {
+      setEditProfile({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: user.phone_number || "",
+      });
+    }
+  }, [user]);
 
   // Handler to save reminder time
   const handleSaveReminder = async () => {
@@ -80,10 +133,105 @@ export default function DashboardView() {
     }
   };
 
-  // Handler to cancel editing
+  // Handler to cancel reminder editing
   const handleCancelEdit = () => {
     setReminderMinutes(salon?.reminder_time_minutes || 60);
     setIsEditingReminder(false);
+  };
+
+  // Handler to save address
+  const handleSaveAddress = async () => {
+    try {
+      await updateSalonMutation.mutateAsync({
+        addresses: [editAddress],
+      });
+      setAlertState({
+        show: true,
+        type: "success",
+        message: "Business address updated successfully!",
+      });
+      setIsEditingAddress(false);
+    } catch (error) {
+      setAlertState({
+        show: true,
+        type: "error",
+        message: "Failed to update business address.",
+      });
+    }
+  };
+
+  // Handler to cancel address editing
+  const handleCancelAddress = () => {
+    if (salon?.addresses?.[0]) {
+      setEditAddress({
+        street: salon.addresses[0].street || "",
+        city: salon.addresses[0].city || "",
+        postal_code: salon.addresses[0].postal_code || "",
+      });
+    }
+    setIsEditingAddress(false);
+  };
+
+  // Handler to save phone
+  const handleSavePhone = async () => {
+    try {
+      await updateSalonMutation.mutateAsync({
+        phone_number: editPhone,
+      });
+      setAlertState({
+        show: true,
+        type: "success",
+        message: "Contact information updated successfully!",
+      });
+      setIsEditingPhone(false);
+    } catch (error) {
+      setAlertState({
+        show: true,
+        type: "error",
+        message: "Failed to update contact information.",
+      });
+    }
+  };
+
+  // Handler to cancel phone editing
+  const handleCancelPhone = () => {
+    setEditPhone(salon?.phone_number || "");
+    setIsEditingPhone(false);
+  };
+
+  // Handler to save profile
+  const handleSaveProfile = async () => {
+    try {
+      await updateUserMutation.mutateAsync({
+        first_name: editProfile.first_name,
+        last_name: editProfile.last_name,
+        phone_number: editProfile.phone_number,
+      });
+      setAlertState({
+        show: true,
+        type: "success",
+        message: "Profile updated successfully!",
+      });
+      setIsEditingProfile(false);
+    } catch (error) {
+      setAlertState({
+        show: true,
+        type: "error",
+        message: "Failed to update profile.",
+      });
+    }
+  };
+
+  // Handler to cancel profile editing
+  const handleCancelProfile = () => {
+    if (user) {
+      setEditProfile({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: user.phone_number || "",
+      });
+    }
+    setIsEditingProfile(false);
   };
 
   // Show loading state
@@ -195,21 +343,133 @@ export default function DashboardView() {
                     <div className="flex items-start gap-3">
                       <MapPin className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          Business Address
-                          {salon.addresses.length > 1 ? "es" : ""}
-                        </h3>
-                        {salon.addresses.map((address) => (
-                          <address
-                            key={address.id}
-                            className="text-sm text-gray-600 not-italic mb-3"
-                          >
-                            <p>{address.street}</p>
-                            <p>
-                              {address.city}, {address.postal_code}
-                            </p>
-                          </address>
-                        ))}
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            Business Address
+                            {salon.addresses.length > 1 ? "es" : ""}
+                          </h3>
+                          {!isEditingAddress && user?.is_owner && (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingAddress(true)}
+                              className="text-sm text-indigo-600 hover:text-indigo-500"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+
+                        {isEditingAddress ? (
+                          <div className="space-y-4">
+                            <div>
+                              <label
+                                htmlFor="street"
+                                className="block text-sm text-gray-600 mb-1"
+                              >
+                                Street
+                              </label>
+                              <input
+                                type="text"
+                                id="street"
+                                value={editAddress.street}
+                                onChange={(e) =>
+                                  setEditAddress({
+                                    ...editAddress,
+                                    street: e.target.value,
+                                  })
+                                }
+                                className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label
+                                  htmlFor="city"
+                                  className="block text-sm text-gray-600 mb-1"
+                                >
+                                  City
+                                </label>
+                                <input
+                                  type="text"
+                                  id="city"
+                                  value={editAddress.city}
+                                  onChange={(e) =>
+                                    setEditAddress({
+                                      ...editAddress,
+                                      city: e.target.value,
+                                    })
+                                  }
+                                  className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="postal_code"
+                                  className="block text-sm text-gray-600 mb-1"
+                                >
+                                  Postal Code
+                                </label>
+                                <input
+                                  type="text"
+                                  id="postal_code"
+                                  value={editAddress.postal_code}
+                                  onChange={(e) =>
+                                    setEditAddress({
+                                      ...editAddress,
+                                      postal_code: e.target.value,
+                                    })
+                                  }
+                                  className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                              <button
+                                type="button"
+                                onClick={handleSaveAddress}
+                                disabled={updateSalonMutation.isPending}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {updateSalonMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : (
+                                  "Save"
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelAddress}
+                                disabled={updateSalonMutation.isPending}
+                                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {salon.addresses.map((address) => (
+                              <address
+                                key={address.id}
+                                className="text-sm text-gray-600 not-italic mb-3"
+                              >
+                                <p>{address.street}</p>
+                                <p>
+                                  {address.city}, {address.postal_code}
+                                </p>
+                              </address>
+                            ))}
+                            {!user?.is_owner && (
+                              <p className="mt-2 text-xs text-gray-500 italic">
+                                Only business owners can edit this information.
+                              </p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -220,12 +480,76 @@ export default function DashboardView() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium text-gray-900 mb-2">
-                        Contact Information
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {salon.phone_number}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          Contact Information
+                        </h3>
+                        {!isEditingPhone && user?.is_owner && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingPhone(true)}
+                            className="text-sm text-indigo-600 hover:text-indigo-500"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingPhone ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label
+                              htmlFor="phone"
+                              className="block text-sm text-gray-600 mb-1"
+                            >
+                              Phone Number
+                            </label>
+                            <input
+                              type="tel"
+                              id="phone"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                              placeholder="+447123456789"
+                              className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                            />
+                          </div>
+
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={handleSavePhone}
+                              disabled={updateSalonMutation.isPending}
+                              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updateSalonMutation.isPending ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                "Save"
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelPhone}
+                              disabled={updateSalonMutation.isPending}
+                              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          <p>{salon.phone_number}</p>
+                          {!user?.is_owner && (
+                            <p className="mt-2 text-xs text-gray-500 italic">
+                              Only business owners can edit this information.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -332,23 +656,137 @@ export default function DashboardView() {
                     <div className="flex items-start gap-3">
                       <User className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          Your Profile
-                        </h3>
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p>
-                            <span className="font-medium">Name:</span>{" "}
-                            {user.first_name} {user.last_name}
-                          </p>
-                          <p>
-                            <span className="font-medium">Email:</span>{" "}
-                            {user.email}
-                          </p>
-                          <p>
-                            <span className="font-medium">Phone:</span>{" "}
-                            {user.phone_number}
-                          </p>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            Your Profile
+                          </h3>
+                          {!isEditingProfile && (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingProfile(true)}
+                              className="text-sm text-indigo-600 hover:text-indigo-500"
+                            >
+                              Edit
+                            </button>
+                          )}
                         </div>
+
+                        {isEditingProfile ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label
+                                  htmlFor="first_name"
+                                  className="block text-sm text-gray-600 mb-1"
+                                >
+                                  First Name
+                                </label>
+                                <input
+                                  type="text"
+                                  id="first_name"
+                                  value={editProfile.first_name}
+                                  onChange={(e) =>
+                                    setEditProfile({
+                                      ...editProfile,
+                                      first_name: e.target.value,
+                                    })
+                                  }
+                                  className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="last_name"
+                                  className="block text-sm text-gray-600 mb-1"
+                                >
+                                  Last Name
+                                </label>
+                                <input
+                                  type="text"
+                                  id="last_name"
+                                  value={editProfile.last_name}
+                                  onChange={(e) =>
+                                    setEditProfile({
+                                      ...editProfile,
+                                      last_name: e.target.value,
+                                    })
+                                  }
+                                  className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="user_phone"
+                                className="block text-sm text-gray-600 mb-1"
+                              >
+                                Phone Number
+                              </label>
+                              <input
+                                type="tel"
+                                id="user_phone"
+                                value={editProfile.phone_number}
+                                onChange={(e) =>
+                                  setEditProfile({
+                                    ...editProfile,
+                                    phone_number: e.target.value,
+                                  })
+                                }
+                                placeholder="+447123456789"
+                                className="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Email
+                              </label>
+                              <p className="text-sm text-gray-500 italic py-2">
+                                {user.email} (cannot be changed)
+                              </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                              <button
+                                type="button"
+                                onClick={handleSaveProfile}
+                                disabled={updateUserMutation.isPending}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {updateUserMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : (
+                                  "Save"
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelProfile}
+                                disabled={updateUserMutation.isPending}
+                                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p>
+                              <span className="font-medium">Name:</span>{" "}
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p>
+                              <span className="font-medium">Email:</span>{" "}
+                              {user.email}
+                            </p>
+                            <p>
+                              <span className="font-medium">Phone:</span>{" "}
+                              {user.phone_number}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -391,17 +829,6 @@ export default function DashboardView() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                      Edit Information
-                    </button>
-                    <button className="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                      View Reports
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
