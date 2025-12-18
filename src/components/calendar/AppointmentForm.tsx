@@ -30,7 +30,7 @@ export default function AppointmentForm() {
 
   // New customer form state
   const [newCustomerName, setNewCustomerName] = useState("");
-  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("07");
 
   // Single alert state for all notifications
   const [alertState, setAlertState] = useState<{
@@ -50,13 +50,11 @@ export default function AppointmentForm() {
     // Reset form
     setSelectedCustomer(null);
     setShowNewCustomerForm(false);
-    setSelectedDate(dayjs().format("YYYY-MM-DD"));
     setSelectedTime("09:00");
     setSelectedEndTime("10:00");
     setComment("");
     setNewCustomerName("");
-    setNewCustomerPhone("");
-    setColumnId(1);
+    setNewCustomerPhone("07");
     // Reset alert
     setAlertState({ show: false, type: "success", message: "" });
   };
