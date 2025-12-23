@@ -1,28 +1,36 @@
-export const getCustomers = async () => {
-  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `customers`, {
+import { UpdateCustomerRequest } from "@/types/customer";
+
+// Fetch customers with optional salon filter
+export const getCustomers = async (salonId?: number) => {
+  const url = salonId
+    ? `${process.env.NEXT_PUBLIC_API_URL}customers/?salon=${salonId}`
+    : `${process.env.NEXT_PUBLIC_API_URL}customers/`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
     credentials: "include",
   });
 
-  // Recommendation: handle errors
   if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error("Failed to fetch data");
+    const text = await res.text();
+    throw new Error(`Failed to fetch customers: ${text}`);
   }
 
   return res.json();
 };
 
-export const getCustomer = async (customer: number) => {
+export const getCustomer = async (customerId: number) => {
   const res = await fetch(
-    process.env.NEXT_PUBLIC_API_URL + `customers/${customer}/`,
+    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
     {
       credentials: "include",
     }
   );
 
-  // Recommendation: handle errors
   if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
     throw new Error("Failed to fetch a customer");
   }
 
@@ -44,10 +52,55 @@ export const createCustomer = async (data: {
   });
 
   if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
     const text = await res.text();
     throw new Error(`Failed to create customer: ${text}`);
   }
 
   return res.json();
+};
+
+// Update customer
+export const updateCustomer = async (
+  customerId: number,
+  data: UpdateCustomerRequest
+) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update customer: ${text}`);
+  }
+
+  return res.json();
+};
+
+// Delete customer
+export const deleteCustomer = async (customerId: number) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete customer: ${text}`);
+  }
+
+  return null; // 204 No Content
 };
