@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Building2,
   MapPin,
@@ -305,10 +306,12 @@ export default function DashboardView() {
             {/* Left Column - Business Image (1/3 width) */}
             <div className="lg:col-span-1 h-full">
               <div className="aspect-square lg:aspect-auto lg:h-full relative">
-                <img
+                <Image
                   src={selectedImage}
                   alt={`${salon.name} business`}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 33vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">

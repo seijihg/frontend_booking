@@ -5,6 +5,7 @@ import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import AppointmentForm from "./AppointmentForm";
 import { useUserStore } from "@/stores/userStore";
@@ -16,7 +17,7 @@ const temp = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 
-type ViewType = "dashboard" | "calendar" | "team" | "projects";
+type ViewType = "dashboard" | "calendar" | "customers" | "team" | "projects";
 
 interface NavBarProps {
   currentView: ViewType;
@@ -42,13 +43,26 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
       name: "Dashboard",
       view: "dashboard" as ViewType,
       current: currentView === "dashboard",
+      requiresStaffOrOwner: false,
     },
     {
       name: "Calendar",
       view: "calendar" as ViewType,
       current: currentView === "calendar",
+      requiresStaffOrOwner: false,
+    },
+    {
+      name: "Customers",
+      view: "customers" as ViewType,
+      current: currentView === "customers",
+      requiresStaffOrOwner: true,
     },
   ];
+
+  // Filter navigation items based on user role
+  const visibleNavigation = navigation.filter(
+    (item) => !item.requiresStaffOrOwner || user?.is_owner || user?.is_staff
+  );
 
   const handleSignOut = async () => {
     try {
@@ -85,7 +99,7 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                   </Disclosure.Button>
                 </div>
                 <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                  {navigation.map((item) => (
+                  {visibleNavigation.map((item) => (
                     <button
                       key={item.name}
                       onClick={() => onViewChange(item.view)}
@@ -117,10 +131,12 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                     <div>
                       <Menu.Button className="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                         <span className="sr-only">Open user menu</span>
-                        <img
+                        <Image
                           className="h-8 w-8 rounded-full"
                           src={temp.imageUrl}
-                          alt=""
+                          alt="User avatar"
+                          width={32}
+                          height={32}
                         />
                       </Menu.Button>
                     </div>
@@ -163,7 +179,7 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
 
           <Disclosure.Panel className="md:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-              {navigation.map((item) => (
+              {visibleNavigation.map((item) => (
                 <Disclosure.Button
                   key={item.name}
                   as="button"
@@ -183,10 +199,12 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
             <div className="border-t border-gray-700 pb-3 pt-4">
               <div className="flex items-center px-5 sm:px-6">
                 <div className="flex-shrink-0">
-                  <img
+                  <Image
                     className="h-10 w-10 rounded-full"
                     src={temp.imageUrl}
-                    alt=""
+                    alt="User avatar"
+                    width={40}
+                    height={40}
                   />
                 </div>
                 <div className="ml-3">

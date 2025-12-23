@@ -1,15 +1,8 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-
 import FloatingCalendarPicker from "./FloatingCalendarPicker";
-import { Customer } from "@/types/customer";
-import { getCustomers } from "@/api/customerApi";
+import { useCustomers } from "@/hooks/useCustomers";
 
 export default function AppointmentForm() {
-  const { isLoading, error, data } = useQuery<Customer[], Error>({
-    queryKey: ["customers"],
-    queryFn: getCustomers
-  });
+  const { isLoading, error, data } = useCustomers();
 
   return (
     <>
