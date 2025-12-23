@@ -2,10 +2,11 @@
 import { useState } from "react";
 
 import CalendarView from "@/components/calendar/CalendarView";
+import CustomersView from "@/components/customers/CustomersView";
 import NavBar from "@/components/dashboard/navigation_bar/NavBar";
 import DashboardView from "../profile/DashboardView";
 
-type ViewType = "dashboard" | "calendar" | "team" | "projects";
+type ViewType = "dashboard" | "calendar" | "customers" | "team" | "projects";
 
 export default function MainComponent() {
   const [currentView, setCurrentView] = useState<ViewType>("dashboard");
@@ -16,6 +17,8 @@ export default function MainComponent() {
         return <DashboardView />;
       case "calendar":
         return <CalendarView />;
+      case "customers":
+        return <CustomersView />;
       case "team":
         return (
           <div className="p-8 text-gray-500">Team view coming soon...</div>
