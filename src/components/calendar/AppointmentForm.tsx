@@ -190,6 +190,12 @@ export default function AppointmentForm() {
                           onCustomerChange={setSelectedCustomer}
                           isLoading={isLoadingCustomers}
                           placeholder="Type to search for a customer..."
+                          onAddNewCustomer={(searchQuery) => {
+                            // Pre-fill the name with the search query
+                            setNewCustomerName(searchQuery);
+                            setShowNewCustomerForm(true);
+                          }}
+                          showAddOption={true}
                         />
 
                         <button
