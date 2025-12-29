@@ -1,6 +1,6 @@
-import { Fragment, useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo, useRef } from "react";
 import { Combobox, Transition } from "@headlessui/react";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { CheckIcon, ChevronUpDownIcon, PlusIcon } from "@heroicons/react/20/solid";
 import { Customer } from "@/types/customer";
 
 interface CustomerSearchSelectProps {
@@ -10,6 +10,10 @@ interface CustomerSearchSelectProps {
   isLoading?: boolean;
   label?: string;
   placeholder?: string;
+  /** Callback when user clicks "Add new customer" - receives the search query */
+  onAddNewCustomer?: (searchQuery: string) => void;
+  /** Show add option even when no query is entered */
+  showAddOption?: boolean;
 }
 
 function classNames(...classes: (string | boolean | undefined)[]) {
@@ -40,9 +44,12 @@ export default function CustomerSearchSelect({
   isLoading = false,
   label = "Customer",
   placeholder = "Search for a customer...",
+  onAddNewCustomer,
+  showAddOption = false,
 }: CustomerSearchSelectProps) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Filter customers based on debounced search query
   const filteredCustomers = useMemo(() => {
@@ -64,6 +71,14 @@ export default function CustomerSearchSelect({
     }
   }, [selectedCustomer]);
 
+  // Handler for add new customer button - closes dropdown and calls callback
+  const handleAddNewCustomer = (searchQuery: string) => {
+    // Close the dropdown by clicking the button (toggles closed)
+    buttonRef.current?.click();
+    // Call the callback
+    onAddNewCustomer?.(searchQuery);
+  };
+
   return (
     <Combobox value={selectedCustomer} onChange={onCustomerChange} nullable>
       <Combobox.Label className="block text-sm font-medium leading-6 text-gray-900">
@@ -79,12 +94,15 @@ export default function CustomerSearchSelect({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={placeholder}
           />
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <ChevronUpDownIcon
-              className="h-5 w-5 text-gray-400"
-              aria-hidden="true"
-            />
-          </Combobox.Button>
+          <Combobox.Button
+              ref={buttonRef}
+              className="absolute inset-y-0 right-0 flex items-center pr-2"
+            >
+              <ChevronUpDownIcon
+                className="h-5 w-5 text-gray-400"
+                aria-hidden="true"
+              />
+            </Combobox.Button>
         </div>
         <Transition
           as={Fragment}
@@ -103,12 +121,38 @@ export default function CustomerSearchSelect({
                 Searching...
               </div>
             ) : filteredCustomers.length === 0 && debouncedQuery !== "" ? (
-              <div className="relative cursor-default select-none px-4 py-2 text-gray-700">
-                No customers found.
+              <div className="py-2">
+                <div className="px-4 py-2 text-sm text-gray-500">
+                  No customers found.
+                </div>
+                {onAddNewCustomer && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddNewCustomer(debouncedQuery.trim())}
+                    className="w-full px-4 py-2 text-left text-sm text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span>
+                      Add &ldquo;<span className="font-medium">{debouncedQuery.trim()}</span>&rdquo; as new customer
+                    </span>
+                  </button>
+                )}
               </div>
             ) : filteredCustomers.length === 0 ? (
-              <div className="relative cursor-default select-none px-4 py-2 text-gray-700">
-                No customers available.
+              <div className="py-2">
+                <div className="px-4 py-2 text-sm text-gray-500">
+                  No customers available.
+                </div>
+                {onAddNewCustomer && showAddOption && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddNewCustomer("")}
+                    className="w-full px-4 py-2 text-left text-sm text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span>Add new customer</span>
+                  </button>
+                )}
               </div>
             ) : (
               filteredCustomers.map((customer) => (
