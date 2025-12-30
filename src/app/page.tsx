@@ -1,5 +1,5 @@
-export default async function Home() {
-  // Check how to save state back to ssr???
+import { redirect } from "next/navigation";
 
-  return <main></main>;
+export default function Home() {
+  redirect("/dashboard");
 }

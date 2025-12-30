@@ -1,13 +1,12 @@
 "use client";
 
 import { Fragment } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { PlusIcon } from "@heroicons/react/20/solid";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-import AppointmentForm from "./AppointmentForm";
 import { useUserStore } from "@/stores/userStore";
 
 const temp = {
@@ -17,52 +16,29 @@ const temp = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 
-type ViewType = "dashboard" | "calendar" | "customers" | "team" | "projects";
-
-interface NavBarProps {
-  currentView: ViewType;
-  onViewChange: (view: ViewType) => void;
-}
-
-const userNavigation = [
-  { name: "Your Profile", href: "#" },
-  { name: "Settings", href: "#" },
-  { name: "Sign out", href: "#" },
+const navigation = [
+  { name: "Dashboard", href: "/dashboard", requiresStaffOrOwner: false },
+  { name: "Calendar", href: "/calendar", requiresStaffOrOwner: false },
+  { name: "Customers", href: "/customers", requiresStaffOrOwner: true },
 ];
 
 function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function NavBar({ currentView, onViewChange }: NavBarProps) {
+export default function DashboardNavBar() {
   const { user, clearUser } = useUserStore();
+  const pathname = usePathname();
   const router = useRouter();
-
-  const navigation = [
-    {
-      name: "Dashboard",
-      view: "dashboard" as ViewType,
-      current: currentView === "dashboard",
-      requiresStaffOrOwner: false,
-    },
-    {
-      name: "Calendar",
-      view: "calendar" as ViewType,
-      current: currentView === "calendar",
-      requiresStaffOrOwner: false,
-    },
-    {
-      name: "Customers",
-      view: "customers" as ViewType,
-      current: currentView === "customers",
-      requiresStaffOrOwner: true,
-    },
-  ];
 
   // Filter navigation items based on user role
   const visibleNavigation = navigation.filter(
     (item) => !item.requiresStaffOrOwner || user?.is_owner || user?.is_staff
   );
+
+  const isCurrentPath = (href: string) => {
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   const handleSignOut = async () => {
     try {
@@ -99,21 +75,24 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                   </Disclosure.Button>
                 </div>
                 <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                  {visibleNavigation.map((item) => (
-                    <button
-                      key={item.name}
-                      onClick={() => onViewChange(item.view)}
-                      className={classNames(
-                        item.current
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                        "rounded-md px-3 py-2 text-sm font-medium"
-                      )}
-                      aria-current={item.current ? "page" : undefined}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
+                  {visibleNavigation.map((item) => {
+                    const isCurrent = isCurrentPath(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={classNames(
+                          isCurrent
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                          "rounded-md px-3 py-2 text-sm font-medium"
+                        )}
+                        aria-current={isCurrent ? "page" : undefined}
+                      >
+                        {item.name}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
               <div className="flex items-center">
@@ -150,25 +129,19 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                       leaveTo="transform opacity-0 scale-95"
                     >
                       <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                        {userNavigation.map((item) => (
-                          <Menu.Item key={item.name}>
-                            {({ active }) => (
-                              <button
-                                onClick={() => {
-                                  if (item.name === "Sign out") {
-                                    handleSignOut();
-                                  }
-                                }}
-                                className={classNames(
-                                  active ? "bg-gray-100" : "",
-                                  "block w-full text-left px-4 py-2 text-sm text-gray-700"
-                                )}
-                              >
-                                {item.name}
-                              </button>
-                            )}
-                          </Menu.Item>
-                        ))}
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={handleSignOut}
+                              className={classNames(
+                                active ? "bg-gray-100" : "",
+                                "block w-full text-left px-4 py-2 text-sm text-gray-700"
+                              )}
+                            >
+                              Sign out
+                            </button>
+                          )}
+                        </Menu.Item>
                       </Menu.Items>
                     </Transition>
                   </Menu>
@@ -179,22 +152,25 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
 
           <Disclosure.Panel className="md:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-              {visibleNavigation.map((item) => (
-                <Disclosure.Button
-                  key={item.name}
-                  as="button"
-                  onClick={() => onViewChange(item.view)}
-                  className={classNames(
-                    item.current
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                    "block rounded-md px-3 py-2 text-base font-medium"
-                  )}
-                  aria-current={item.current ? "page" : undefined}
-                >
-                  {item.name}
-                </Disclosure.Button>
-              ))}
+              {visibleNavigation.map((item) => {
+                const isCurrent = isCurrentPath(item.href);
+                return (
+                  <Disclosure.Button
+                    key={item.name}
+                    as={Link}
+                    href={item.href}
+                    className={classNames(
+                      isCurrent
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                      "block rounded-md px-3 py-2 text-base font-medium"
+                    )}
+                    aria-current={isCurrent ? "page" : undefined}
+                  >
+                    {item.name}
+                  </Disclosure.Button>
+                );
+              })}
             </div>
             <div className="border-t border-gray-700 pb-3 pt-4">
               <div className="flex items-center px-5 sm:px-6">
@@ -224,20 +200,13 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
                 </button>
               </div>
               <div className="mt-3 space-y-1 px-2 sm:px-3">
-                {userNavigation.map((item) => (
-                  <Disclosure.Button
-                    key={item.name}
-                    as="button"
-                    onClick={() => {
-                      if (item.name === "Sign out") {
-                        handleSignOut();
-                      }
-                    }}
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
-                  >
-                    {item.name}
-                  </Disclosure.Button>
-                ))}
+                <Disclosure.Button
+                  as="button"
+                  onClick={handleSignOut}
+                  className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
+                >
+                  Sign out
+                </Disclosure.Button>
               </div>
             </div>
           </Disclosure.Panel>
