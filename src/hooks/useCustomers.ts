@@ -5,14 +5,15 @@ import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  GetCustomersParams,
 } from "@/api/customerApi";
 import { Customer, UpdateCustomerRequest } from "@/types/customer";
 
-// Fetch customers with optional salon filter
-export const useCustomers = (salonId?: number) => {
+// Fetch customers with optional salon filter and sorting
+export const useCustomers = (params?: GetCustomersParams) => {
   return useQuery<Customer[]>({
-    queryKey: salonId ? ["customers", salonId] : ["customers"],
-    queryFn: () => getCustomers(salonId),
+    queryKey: ["customers", params?.salonId, params?.sortBy, params?.order],
+    queryFn: () => getCustomers(params),
   });
 };
 

@@ -546,9 +546,11 @@ export default function CustomersView() {
 │  Manage your salon's customer list                                          │
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ FULL NAME              │ PHONE NUMBER         │ ACTIONS                │ │
+│  │ FULL NAME ▲ (clickable)│ PHONE NUMBER         │ ACTIONS                │ │
 │  ├────────────────────────────────────────────────────────────────────────┤ │
-│  │ Jane Customer          │ +447111222333        │      Edit    Delete    │ │
+│  │ Alice Anderson         │ +447111222333        │      Edit    Delete    │ │
+│  ├────────────────────────────────────────────────────────────────────────┤ │
+│  │ Bob Baker              │ +447222333444        │      Edit    Delete    │ │
 │  ├────────────────────────────────────────────────────────────────────────┤ │
 │  │ [________________]     │ [________________]   │   [Save]  [Cancel]     │ │
 │  │ (Editing Mode)         │ (Editing Mode)       │                        │ │
@@ -578,6 +580,229 @@ export default function CustomersView() {
 - Row shows confirmation message with customer name
 - Confirm/Cancel buttons replace Edit/Delete buttons
 - Confirm button is red to indicate destructive action
+
+---
+
+## Column Sorting Feature
+
+### Overview
+
+The customer list supports **server-side sorting** via the backend API. The "Full Name" column header is clickable and toggles between ascending and descending sort order.
+
+### API Support (from `docs/FRONTEND_API.md`)
+
+```http
+GET /customers/?salon={salon_id}&sort_by={field}&order={asc|desc}
+```
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `salon` | int | No | - | Filter customers by salon ID |
+| `sort_by` | string | No | `created` | Field to sort by |
+| `order` | string | No | `desc` | Sort direction: `asc` or `desc` |
+
+**Sortable Fields:**
+- `full_name` - Alphabetical by name
+- `phone_number` - By phone number
+- `created` - By creation date (default)
+- `modified` - By last modification date
+
+**Example API Calls:**
+```bash
+# Sort by name A-Z
+GET /customers/?salon=1&sort_by=full_name&order=asc
+
+# Sort by name Z-A
+GET /customers/?salon=1&sort_by=full_name&order=desc
+```
+
+**Note:** Invalid `sort_by` or `order` values silently fallback to defaults (`created` desc).
+
+---
+
+### Full Name Column Sorting
+
+#### Behavior
+
+| Current State | Click Action | Result |
+|---------------|--------------|--------|
+| Ascending (A→Z) | Click header | Sort Z→A (descending) |
+| Descending (Z→A) | Click header | Sort A→Z (ascending) |
+
+**Default State:** Ascending (A→Z) when component loads.
+
+#### Visual Indicators
+
+```
+┌──────────────────────────────────┐
+│ FULL NAME ▲   (Ascending A→Z)   │  ← Up arrow indicates ascending
+├──────────────────────────────────┤
+│ FULL NAME ▼   (Descending Z→A)  │  ← Down arrow indicates descending
+└──────────────────────────────────┘
+```
+
+- **▲ (ChevronUp)**: Indicates ascending sort (A→Z)
+- **▼ (ChevronDown)**: Indicates descending sort (Z→A)
+- **Cursor**: `cursor-pointer` to indicate clickable
+- **Hover**: Subtle background color change on hover
+
+---
+
+### Implementation
+
+#### Phase 1: Update API Function
+
+**File: `src/api/customerApi.ts`**
+
+Update `getCustomers` to accept sorting parameters:
+
+```typescript
+export interface GetCustomersParams {
+  salonId?: number;
+  sortBy?: "full_name" | "phone_number" | "created" | "modified";
+  order?: "asc" | "desc";
+}
+
+export const getCustomers = async (params?: GetCustomersParams): Promise<Customer[]> => {
+  const searchParams = new URLSearchParams();
+
+  if (params?.salonId) {
+    searchParams.append("salon", params.salonId.toString());
+  }
+  if (params?.sortBy) {
+    searchParams.append("sort_by", params.sortBy);
+  }
+  if (params?.order) {
+    searchParams.append("order", params.order);
+  }
+
+  const queryString = searchParams.toString();
+  const url = queryString ? `customers/?${queryString}` : "customers/";
+
+  const response = await fetch(`${API_URL}${url}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch customers");
+  }
+
+  return response.json();
+};
+```
+
+#### Phase 2: Update React Query Hook
+
+**File: `src/hooks/useCustomers.ts`**
+
+Update `useCustomers` hook to accept sorting parameters:
+
+```typescript
+import { GetCustomersParams } from "@/api/customerApi";
+
+export const useCustomers = (params?: GetCustomersParams) => {
+  return useQuery({
+    queryKey: ["customers", params?.salonId, params?.sortBy, params?.order],
+    queryFn: () => getCustomers(params),
+    enabled: true,
+  });
+};
+```
+
+#### Phase 3: Update Component
+
+**File: `src/components/customers/CustomersView.tsx`**
+
+```typescript
+"use client";
+
+import { useState } from "react";
+import { Users, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+// ... other imports
+
+type SortDirection = "asc" | "desc";
+
+export default function CustomersView() {
+  const { user } = useUserStore();
+  const salonId = user?.salons[0];
+
+  // Sorting state
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Fetch customers with server-side sorting
+  const {
+    data: customers,
+    isLoading,
+    isError,
+    error,
+  } = useCustomers({
+    salonId,
+    sortBy: "full_name",
+    order: sortDirection,
+  });
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  // ... rest of component
+}
+```
+
+**Header Cell (Updated)**:
+```typescript
+<th
+  scope="col"
+  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none transition-colors"
+  onClick={toggleSortDirection}
+>
+  <div className="flex items-center gap-1">
+    Full Name
+    {sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    )}
+  </div>
+</th>
+```
+
+---
+
+### Advantages of Server-Side Sorting
+
+| Aspect | Server-Side | Client-Side |
+|--------|-------------|-------------|
+| **Performance** | Better for large datasets | Only for small lists |
+| **Consistency** | Database handles edge cases | Manual null/case handling |
+| **Pagination** | Works with pagination | Breaks with pagination |
+| **Memory** | Low client memory usage | Loads all data in memory |
+| **Caching** | React Query caches per sort | Single cache, re-sort locally |
+
+---
+
+### Edge Cases (Handled by Backend)
+
+| Scenario | Backend Behavior |
+|----------|------------------|
+| Empty `full_name` | Sorted consistently by database |
+| Null `full_name` | Sorted to beginning or end (DB-dependent) |
+| Invalid `sort_by` | Falls back to `created` |
+| Invalid `order` | Falls back to `desc` |
+| No customers | Returns empty array `[]` |
+
+---
+
+### Dependencies
+
+- `lucide-react`: Add `ChevronUp` and `ChevronDown` icons to imports
+- React Query: Handles caching per sort configuration automatically
 
 ---
 
@@ -625,7 +850,38 @@ export default function CustomersView() {
 - [x] Implement delete confirmation mode
 - [x] Add alert feedback for success/error
 
-### Phase 4: Testing
+### Phase 4: Add Server-Side Column Sorting (PENDING)
+
+#### 4.1 Update API Layer
+
+**File: `src/api/customerApi.ts`**
+
+- [ ] Add `GetCustomersParams` interface with `salonId`, `sortBy`, `order`
+- [ ] Update `getCustomers` function to accept `GetCustomersParams`
+- [ ] Build query string with `sort_by` and `order` parameters
+- [ ] Export `GetCustomersParams` interface
+
+#### 4.2 Update React Query Hook
+
+**File: `src/hooks/useCustomers.ts`**
+
+- [ ] Import `GetCustomersParams` from customerApi
+- [ ] Update `useCustomers` to accept `GetCustomersParams` instead of just `salonId`
+- [ ] Update `queryKey` to include `sortBy` and `order` for proper caching
+
+#### 4.3 Update Component
+
+**File: `src/components/customers/CustomersView.tsx`**
+
+- [ ] Add `sortDirection` state (`"asc" | "desc"`, default: `"asc"`)
+- [ ] Add `toggleSortDirection` handler function
+- [ ] Update `useCustomers` call to pass `{ salonId, sortBy: "full_name", order: sortDirection }`
+- [ ] Add `ChevronUp` / `ChevronDown` icons to imports from lucide-react
+- [ ] Update Full Name header to be clickable with `onClick={toggleSortDirection}`
+- [ ] Display sort indicator icon based on `sortDirection`
+- [ ] Add hover styles to header (`cursor-pointer`, `hover:bg-gray-100`, `select-none`, `transition-colors`)
+
+### Phase 5: Testing
 - [ ] Test Customers tab visible to owners and staff only
 - [ ] Test customer list displays correctly (filtered by salon)
 - [ ] Test Edit button triggers edit mode
@@ -637,6 +893,11 @@ export default function CustomersView() {
 - [ ] Test Confirm deletes the customer
 - [ ] Test Cancel reverts delete confirmation
 - [ ] Test success/error alerts
+- [ ] Test clicking Full Name header sorts ascending (A→Z)
+- [ ] Test clicking again sorts descending (Z→A)
+- [ ] Test sort indicator icon changes appropriately
+- [ ] Test sorting with empty/null full_name values
+- [ ] Test sorting is case-insensitive
 
 ---
 
@@ -655,13 +916,14 @@ export default function CustomersView() {
 
 ## Dependencies
 
-- `lucide-react` - Already installed (needs `Users` and `Loader2` icons)
-- `@tanstack/react-query` - Already installed
-- `useCustomers` hook - COMPLETED
+- `lucide-react` - Already installed (needs `Users`, `Loader2`, `ChevronUp`, `ChevronDown` icons)
+- `@tanstack/react-query` - Already installed (handles caching per sort configuration)
+- `useCustomers` hook - COMPLETED (needs update to accept sorting params)
 - `useUpdateCustomer` hook - COMPLETED
 - `useDeleteCustomer` hook - COMPLETED
 - `Customer` type - COMPLETED
 - `Alert` component - Already exists
+- Backend API - Supports `sort_by` and `order` query parameters
 
 ---
 

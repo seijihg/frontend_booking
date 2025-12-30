@@ -1,9 +1,31 @@
-import { UpdateCustomerRequest } from "@/types/customer";
+import { Customer, UpdateCustomerRequest } from "@/types/customer";
 
-// Fetch customers with optional salon filter
-export const getCustomers = async (salonId?: number) => {
-  const url = salonId
-    ? `${process.env.NEXT_PUBLIC_API_URL}customers/?salon=${salonId}`
+// Parameters for fetching customers with optional filtering and sorting
+export interface GetCustomersParams {
+  salonId?: number;
+  sortBy?: "full_name" | "phone_number" | "created" | "modified";
+  order?: "asc" | "desc";
+}
+
+// Fetch customers with optional salon filter and sorting
+export const getCustomers = async (
+  params?: GetCustomersParams
+): Promise<Customer[]> => {
+  const searchParams = new URLSearchParams();
+
+  if (params?.salonId) {
+    searchParams.append("salon", params.salonId.toString());
+  }
+  if (params?.sortBy) {
+    searchParams.append("sort_by", params.sortBy);
+  }
+  if (params?.order) {
+    searchParams.append("order", params.order);
+  }
+
+  const queryString = searchParams.toString();
+  const url = queryString
+    ? `${process.env.NEXT_PUBLIC_API_URL}customers/?${queryString}`
     : `${process.env.NEXT_PUBLIC_API_URL}customers/`;
 
   const res = await fetch(url, {

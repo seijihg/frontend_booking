@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+
+type SortDirection = "asc" | "desc";
 import {
   useCustomers,
   useUpdateCustomer,
@@ -14,6 +16,9 @@ import { Customer } from "@/types/customer";
 export default function CustomersView() {
   const { user } = useUserStore();
   const salonId = user?.salons[0];
+
+  // Sorting state
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Customer editing state
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(
@@ -34,13 +39,22 @@ export default function CustomersView() {
     message: string;
   }>({ show: false, type: "success", message: "" });
 
-  // Fetch customers filtered by salon
+  // Fetch customers filtered by salon with server-side sorting
   const {
     data: customers,
     isLoading,
     isError,
     error,
-  } = useCustomers(salonId);
+  } = useCustomers({
+    salonId,
+    sortBy: "full_name",
+    order: sortDirection,
+  });
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
 
   // Mutations
   const updateCustomerMutation = useUpdateCustomer();
@@ -185,9 +199,17 @@ export default function CustomersView() {
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none transition-colors"
+                    onClick={toggleSortDirection}
                   >
-                    Full Name
+                    <div className="flex items-center gap-1">
+                      Full Name
+                      {sortDirection === "asc" ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
                   </th>
                   <th
                     scope="col"
