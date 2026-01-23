@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDeleteAppointment } from "@/hooks/useAppointments";
-import { useUserStore } from "@/stores/userStore";
+import { useDeleteAppointment, useUpdateAppointment } from "@/hooks/useAppointments";
 import { Customer } from "@/types/customer";
 
 interface AppointmentDetailsModalProps {
@@ -22,6 +21,7 @@ interface AppointmentDetailsModalProps {
     bg: string;
     text: string;
   };
+  selectedDate?: string;
 }
 
 const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
@@ -30,16 +30,44 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
   appointment,
   position,
   colorScheme = { bg: "bg-white", text: "text-gray-900" },
+  selectedDate,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { user } = useUserStore();
-  const deleteAppointmentMutation = useDeleteAppointment();
+  const commentEditRef = useRef<HTMLDivElement>(null);
+  const deleteAppointmentMutation = useDeleteAppointment(selectedDate);
+  const updateAppointmentMutation = useUpdateAppointment(selectedDate);
 
-  // Handle click outside
+  // Inline comment editing state
+  const [isEditingComment, setIsEditingComment] = useState(false);
+  const [editedComment, setEditedComment] = useState("");
+
+  // Reset edit state when appointment ID changes (new appointment selected)
+  useEffect(() => {
+    if (appointment) {
+      setEditedComment(appointment.comment || "");
+      setIsEditingComment(false);
+    }
+  }, [appointment?.id]);
+
+  // Handle click outside modal (closes modal)
+  // Handle click outside comment edit area (cancels edit)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (!isOpen) return;
+
+      // If editing comment and click is outside comment edit area, cancel edit
       if (
-        isOpen &&
+        isEditingComment &&
+        commentEditRef.current &&
+        !commentEditRef.current.contains(event.target as Node)
+      ) {
+        setIsEditingComment(false);
+        setEditedComment(appointment?.comment || "");
+        return;
+      }
+
+      // If click is outside modal, close modal
+      if (
         modalRef.current &&
         !modalRef.current.contains(event.target as Node)
       ) {
@@ -53,13 +81,21 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isEditingComment, appointment?.comment]);
 
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isOpen && event.key === "Escape") {
-        onClose();
+      if (!isOpen) return;
+
+      if (event.key === "Escape") {
+        // If editing comment, cancel edit first
+        if (isEditingComment) {
+          setIsEditingComment(false);
+          setEditedComment(appointment?.comment || "");
+        } else {
+          onClose();
+        }
       }
     };
 
@@ -69,7 +105,7 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
         document.removeEventListener("keydown", handleKeyDown);
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isEditingComment, appointment?.comment]);
 
   const handleDelete = async () => {
     if (!appointment) return;
@@ -80,6 +116,25 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
     } catch (error) {
       console.error("Failed to delete appointment:", error);
     }
+  };
+
+  const handleSaveComment = async () => {
+    if (!appointment) return;
+
+    try {
+      await updateAppointmentMutation.mutateAsync({
+        id: parseInt(appointment.id),
+        data: { comment: editedComment },
+      });
+      setIsEditingComment(false);
+    } catch (error) {
+      console.error("Failed to update comment:", error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingComment(false);
+    setEditedComment(appointment?.comment || "");
   };
 
   if (!appointment) return null;
@@ -228,16 +283,52 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
                       </div>
                     )}
 
-                    {appointment.comment && (
-                      <div>
+                    <div ref={commentEditRef}>
+                      <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-500">
                           Comment
                         </span>
-                        <p className="mt-1 text-sm text-gray-900">
-                          {appointment.comment}
-                        </p>
+                        {!isEditingComment && (
+                          <button
+                            onClick={() => setIsEditingComment(true)}
+                            className="text-xs text-indigo-600 hover:text-indigo-500"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
-                    )}
+
+                      {isEditingComment ? (
+                        <div className="mt-1 space-y-2">
+                          <textarea
+                            value={editedComment}
+                            onChange={(e) => setEditedComment(e.target.value)}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            rows={3}
+                            autoFocus
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={handleCancelEdit}
+                              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleSaveComment}
+                              disabled={updateAppointmentMutation.isPending}
+                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-500 disabled:opacity-50"
+                            >
+                              {updateAppointmentMutation.isPending ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-sm text-gray-900">
+                          {editedComment || "No comment"}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {

@@ -36,6 +36,30 @@ export const getAppointments = async (date?: string) => {
   return res.json();
 };
 
+export const updateAppointment = async (
+  appointmentId: number,
+  data: Partial<AppointmentPayload>
+) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}appointments/${appointmentId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update appointment: ${text}`);
+  }
+
+  return res.json();
+};
+
 export const deleteAppointment = async (appointmentId: number) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}appointments/${appointmentId}/`,

@@ -147,6 +147,7 @@ const DayViewWithSlots: React.FC<DayViewWithSlotsProps> = ({
         }
         position={selectedAppointment?.position}
         colorScheme={selectedAppointment?.colorScheme}
+        selectedDate={selectedDate}
       />
     </div>
   );
