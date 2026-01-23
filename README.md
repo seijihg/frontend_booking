@@ -1,34 +1,63 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Frontend Booking System
 
-## Getting Started
+A Next.js 15 booking platform for appointment scheduling, built with React 19, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## Prerequisites
 
+- Node.js >= 22.12.0 (see `.nvmrc`)
+- Yarn package manager
+- Backend API running (Django)
+
+## Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone git@github.com:seijihg/frontend_booking.git
+   cd frontend_booking
+   ```
+
+2. **Install dependencies**
+   ```bash
+   yarn install
+   ```
+
+3. **Set up environment variables**
+
+   Create a `.env.local` file in the project root:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000/api/
+   ```
+
+## Running the Development Server
+
+**Standard development mode:**
 ```bash
-npm run dev
-# or
 yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Development with SSL (for testing HTTPS):**
+```bash
+yarn ssl
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application will be available at:
+- `http://localhost:3000` (standard)
+- `https://localhost:3000` (SSL mode)
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Other Commands
 
-## Learn More
+```bash
+# Build for production
+yarn build
 
-To learn more about Next.js, take a look at the following resources:
+# Start production server
+yarn start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run linting
+yarn lint
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Documentation
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- See `CLAUDE.md` for detailed project documentation
+- See `.claude/docs/FRONTEND_API.md` for backend API reference
