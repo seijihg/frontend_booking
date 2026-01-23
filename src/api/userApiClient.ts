@@ -1,5 +1,32 @@
 import { User } from "@/types/user";
 
+// Login request interface
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// Client-side function to login user
+export const loginUser = async (payload: LoginRequest) => {
+  const response = await fetch(
+    process.env.NEXT_PUBLIC_API_URL + "users/login/",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("An unexpected error occurred. Please try again.");
+  }
+
+  return response.json();
+};
+
 // Update user request interface
 export interface UpdateUserRequest {
   first_name?: string;

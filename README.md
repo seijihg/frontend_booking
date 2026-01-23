@@ -59,5 +59,3 @@ yarn lint
 
 ## Documentation
 
-- See `CLAUDE.md` for detailed project documentation
-- See `.claude/docs/FRONTEND_API.md` for backend API reference

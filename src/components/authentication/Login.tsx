@@ -1,42 +1,12 @@
 "use client";
 
-import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useMutation } from "@tanstack/react-query";
 import { useUserStore } from "@/stores/userStore";
-
-interface IFormInput {
-  email: string;
-  password: string;
-}
-
-interface MyError {
-  non_field_errors?: string[];
-}
-
-const loginUser = async (payload: IFormInput) => {
-  const response = await fetch(
-    process.env.NEXT_PUBLIC_API_URL + "users/login/",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    }
-  );
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    throw errorResponse; // Throw the error response
-  }
-
-  return response.json();
-};
+import { loginUser, LoginRequest } from "@/api/userApiClient";
 
 // Create Schema for yup
 const schema = yup.object().shape({
@@ -55,7 +25,7 @@ function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<IFormInput>({ resolver: yupResolver(schema) });
+  } = useForm<LoginRequest>({ resolver: yupResolver(schema) });
 
   const router = useRouter();
 
@@ -67,7 +37,7 @@ function LoginForm() {
     },
   });
 
-  const onSubmit = (data: IFormInput) => {
+  const onSubmit = (data: LoginRequest) => {
     mutate(data);
   };
 
@@ -145,7 +115,7 @@ function LoginForm() {
               role="alert"
             >
               <span className="block sm:inline">
-                {(error as MyError).non_field_errors}
+                {(error as Error).message}
               </span>
             </div>
           )}
