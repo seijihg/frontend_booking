@@ -18,15 +18,19 @@ export const createAppointment = async (data: AppointmentPayload) => {
   return res.json();
 };
 
-export const getAppointments = async () => {
-  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `appointments/`, {
+export const getAppointments = async (date?: string) => {
+  const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}appointments/`);
+
+  if (date) {
+    url.searchParams.set("date", date);
+  }
+
+  const res = await fetch(url.toString(), {
     credentials: "include",
   });
 
-  // Recommendation: handle errors
   if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error("Failed to fetch data");
+    throw new Error("Failed to fetch appointments");
   }
 
   return res.json();

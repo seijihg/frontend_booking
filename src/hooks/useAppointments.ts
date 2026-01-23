@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAppointments, createAppointment, deleteAppointment } from "@/api/appointmentApi";
 import { AppointmentPayload } from "@/types/appointment";
 
-export const useAppointments = () => {
+export const useAppointments = (date?: string) => {
   return useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
+    queryKey: date ? ["appointments", date] : ["appointments"],
+    queryFn: () => getAppointments(date),
   });
 };
 

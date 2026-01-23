@@ -30,8 +30,11 @@ export default function CalendarView() {
   const [currentView, setCurrentView] = useState<ViewType>("day");
   const { setAppointmentFormOpen } = useAppointmentStore();
 
-  // Fetch appointments using React Query
-  const { data: bookings = [], isLoading, error } = useAppointments();
+  // Format selected date for API query
+  const selectedDateStr = selectedDate.format("YYYY-MM-DD");
+
+  // Fetch appointments for selected date using React Query
+  const { data: bookings = [], isLoading, error } = useAppointments(selectedDateStr);
 
   // Transform booking data to appointment format
   const appointments = useMemo<Appointment[]>(() => {
@@ -106,12 +109,6 @@ export default function CalendarView() {
   const handleAddEvent = () => {
     setAppointmentFormOpen(true);
   };
-
-  // Filter appointments for selected date
-  const dailyAppointments = useMemo(() => {
-    const selectedDateStr = selectedDate.format("YYYY-MM-DD");
-    return appointments.filter((apt) => apt.date === selectedDateStr);
-  }, [appointments, selectedDate]);
 
   return (
     <div className="flex h-full flex-col">
@@ -261,8 +258,8 @@ export default function CalendarView() {
               )}
               {!error && !isLoading && currentView === "day" && (
                 <DayViewWithSlots
-                  appointments={dailyAppointments}
-                  selectedDate={selectedDate.format("YYYY-MM-DD")}
+                  appointments={appointments}
+                  selectedDate={selectedDateStr}
                 />
               )}
               {currentView === "week" && (
