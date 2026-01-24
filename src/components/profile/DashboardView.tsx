@@ -235,8 +235,9 @@ export default function DashboardView() {
     setIsEditingProfile(false);
   };
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state while user or salon data is loading
+  // This includes: user not yet in store, or salon query in progress
+  if (!user || isLoading) {
     return (
       <div className="min-h-full bg-gray-50 py-8 flex items-center justify-center">
         <div className="text-center">

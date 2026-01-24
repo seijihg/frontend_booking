@@ -1,7 +1,18 @@
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import LoginForm from "@/components/authentication/Login";
+import getUser from "@/api/userApi";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  // Server-side authentication check
+  const data = await getUser();
+  const user = data?.user;
+
+  // Redirect authenticated users to dashboard
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <>
       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
