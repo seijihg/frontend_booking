@@ -42,17 +42,31 @@ export default function DashboardNavBar() {
 
   const handleSignOut = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}users/logout/`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         clearUser();
         router.push("/login");
+      } else {
+        // Fallback: Clear state and redirect even if API fails
+        console.error("Logout API failed, clearing local state");
+        clearUser();
+        router.push("/login");
       }
     } catch (error) {
+      // Fallback: Clear state and redirect on network error
       console.error("Logout error:", error);
+      clearUser();
+      router.push("/login");
     }
   };
 
