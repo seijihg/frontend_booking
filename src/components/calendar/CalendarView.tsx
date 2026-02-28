@@ -13,6 +13,7 @@ import { useAppointmentStore } from "@/stores/appointmentStore";
 import DayViewWithSlots from "./DayViewWithSlots";
 import AppointmentForm from "./AppointmentForm";
 import ViewDropdown from "@/components/utils/ViewDropdown";
+import VoiceBookingChatbox from "@/components/voice/VoiceBookingChatbox";
 import { useAppointments } from "@/hooks/useAppointments";
 import { Appointment, BookingData } from "@/types/appointment";
 
@@ -348,6 +349,9 @@ export default function CalendarView() {
               </button>
             ))}
           </div>
+
+          {/* Voice Booking Chatbox */}
+          <VoiceBookingChatbox />
         </div>
       </div>
 

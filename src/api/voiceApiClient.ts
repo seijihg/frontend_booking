@@ -1,8 +1,7 @@
 import { ChatRequest, ChatResponse, TranscribeResponse } from "@/types/voice";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 // Client-side function to transcribe audio via Whisper
+// Routes through Next.js API proxy which adds Authorization header
 export const transcribeAudio = async (
   audioBlob: Blob,
   language?: string
@@ -14,9 +13,8 @@ export const transcribeAudio = async (
     formData.append("language", language);
   }
 
-  const res = await fetch(`${API_URL}voice/transcribe/`, {
+  const res = await fetch("/api/voice/transcribe", {
     method: "POST",
-    credentials: "include",
     body: formData,
   });
 
@@ -38,15 +36,15 @@ export const transcribeAudio = async (
 };
 
 // Client-side function to send a chat message to the booking assistant
+// Routes through Next.js API proxy which adds Authorization header
 export const sendChatMessage = async (
   data: ChatRequest
 ): Promise<ChatResponse> => {
-  const res = await fetch(`${API_URL}voice/chat/`, {
+  const res = await fetch("/api/voice/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include",
     body: JSON.stringify(data),
   });
 
