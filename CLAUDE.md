@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Client code talks to `NEXT_PUBLIC_API_URL`, which is now `/api/` (this app); the strangler proxy under `src/app/api/[...path]` forwards unmatched calls to the Django REST backend at `LEGACY_API_URL` (e.g. `http://localhost:8000/`, no `api/` prefix). Trailing slash required on both — URLs are built by string concatenation like `API_URL + "users/login/"`.
+Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Client code talks to `NEXT_PUBLIC_API_URL`, which is now `/api/` (this app). The separate Django REST backend has been switched off and its endpoints are being re-implemented as Next.js route handlers under `src/app/api/` (see `docs/design/`). Trailing slash required — URLs are built by string concatenation like `API_URL + "users/login/"`.
 
 ## Commands
 
@@ -27,7 +27,7 @@ yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-k
 
 Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `LEGACY_API_URL` (Django base URL used by the strangler proxy and server-side auth; removed at cutover) and `DATABASE_URL` (Postgres, shared with Django during migration). Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL) and `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
@@ -73,11 +73,11 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 ### Server layer (`src/server/`)
 
 - Every file under `src/server/` starts with `import "server-only"` (generated `db/schema.ts` and `db/relations.ts` are the exception, since drizzle-kit loads them in plain Node).
-- `env.ts`: `getEnv()` validates `DATABASE_URL` and `LEGACY_API_URL` with zod lazily on first call and memoises (so build and tests need no secrets).
+- `env.ts`: `getEnv()` validates `DATABASE_URL` with zod lazily on first call and memoises (so build and tests need no secrets). Later phases add their variables here.
 - `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` are introspected from the Django-owned tables via `yarn db:pull` (table names kept as Django names). `db/migrations/` is reserved for curated forward migrations.
-- `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`), `legacy-proxy.ts` (strangler proxy helpers).
+- `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`).
 - `GET /api/health` runs `select 1` through Drizzle: 200 `{status:"ok",db:"ok"}` or 503.
-- Strangler proxy: `src/app/api/[...path]/route.ts` forwards any `/api/*` request not matched by a specific route (`/api/health`, `/api/voice/*`) to `LEGACY_API_URL`, always with a trailing slash, forwarding cookies and every `Set-Cookie`. It logs `[legacy-proxy] METHOD /path/ -> status ms`; that log is the signal for when the proxy can be decommissioned.
+- Until Phase 1 lands, `src/api/userApi.ts` and the voice proxy routes still point at the old backend and do not work; they are replaced by native handlers in Phases 1 and 3 of the plan.
 
 ### UI conventions
 

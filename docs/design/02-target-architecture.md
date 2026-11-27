@@ -30,7 +30,7 @@ One process, one repo, one CI pipeline, one database. Redis, the worker, gunicor
 ## 2. Guiding principles
 
 1. **Preserve the wire contract first, improve it second.** Every ported route returns the same JSON shape (snake_case, DRF-style field errors) so the UI keeps working during the migration. Clean-ups come after cutover.
-2. **Adopt the existing database.** Same Postgres instance, same tables, same IDs, same password hashes. No ETL, and Django and Next can run side by side against it during the strangler phase.
+2. **Adopt the existing database.** Same Postgres instance, same tables, same IDs, same password hashes. No ETL. (The Django API is already switched off; the database is the only thing carried over.)
 3. **Thin handlers, fat services.** Route handlers only parse, authenticate, call a service, and serialise. Services are plain TypeScript functions that take a `Session` and a DB handle, so server components, route handlers, the voice tool executor and the cron job share one code path.
 4. **Tenancy is enforced in the service layer, not trusted from the client.** Every query is scoped to the salons in `session.user.salons`. This closes findings F1-F3.
 5. **Derive, don't schedule.** Reminders are computed from `appointment_time - reminder_time_minutes` by a periodic job, with an idempotency column, instead of scheduling a message per appointment.
@@ -57,7 +57,6 @@ src/
       voice/chat/route.ts           POST
       jobs/reminders/route.ts       GET/POST, cron-secret protected
       health/route.ts               GET
-      [...path]/route.ts            TEMPORARY strangler proxy to Django (deleted at cutover)
   server/                           import "server-only" at the top of every file
     db/
       client.ts                     drizzle(pg pool) singleton
@@ -137,11 +136,11 @@ erDiagram
 
 ### 5.1 Decision: own minimal JWT-in-cookie auth, compatible with SimpleJWT
 
-Auth.js/Clerk were rejected: the product is credentials-only, staff accounts are created by owners, and the existing cookie/JWT scheme is simple and already understood by the UI. Keeping the SimpleJWT format allows Django-issued cookies to remain valid during dual-run.
+Auth.js/Clerk were rejected: the product is credentials-only, staff accounts are created by owners, and the existing cookie/JWT scheme is simple and already understood by the UI. The SimpleJWT claim layout is kept because the client-side token helpers already read it; Django-issued cookies are not honoured (Django is off), so users log in again once.
 
 | Concern | Design |
 |---|---|
-| Signing | `jose` HS256 with `AUTH_SECRET`. During migration `AUTH_SECRET = DJANGO_SECRET_KEY`; rotate after Django is gone. |
+| Signing | `jose` HS256 with a fresh `AUTH_SECRET` (no relation to `DJANGO_SECRET_KEY`). |
 | Claims | `{ token_type, user_id, jti, iat, exp }` to match SimpleJWT. Access 60 min, refresh 7 days. |
 | Cookies | `token`, `refresh_token`; `HttpOnly`, `Secure`, `Path=/`, **`SameSite=Lax`**, no `Domain` (same origin now). |
 | Passwords | `password.ts` parses `pbkdf2_sha256$<iter>$<salt>$<b64>` and verifies with `crypto.pbkdf2`. New/changed passwords are written in the same format so the DB stays Django-readable until cutover. |
@@ -255,12 +254,11 @@ Route handler runtime: Node (not Edge), `export const maxDuration = 60` for chat
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Postgres connection (same DB Django uses during migration) |
-| `AUTH_SECRET` | JWT HS256 secret (= `DJANGO_SECRET_KEY` until cutover, then rotated) |
+| `AUTH_SECRET` | JWT HS256 secret (fresh; generated for this app) |
 | `CRON_SECRET` | Bearer token for `/api/jobs/*` |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | SMS |
 | `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-4o`, `OPENAI_WHISPER_MODEL=whisper-1` | Voice |
 | `ANTHROPIC_API_KEY`, `VOICE_PROVIDER` | Optional provider B |
-| `LEGACY_API_URL` | Django base URL for the temporary strangler proxy; removed at cutover |
 | `NEXT_PUBLIC_API_URL` | Set to `/api/` during migration, then removed in favour of a hard-coded relative base |
 
 Config is validated once at boot with zod (`src/server/env.ts`) so a missing secret fails fast.
