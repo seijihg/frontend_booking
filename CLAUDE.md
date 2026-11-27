@@ -27,7 +27,7 @@ yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-k
 
 Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Optional: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (SMS is skipped when any is unset). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
@@ -78,7 +78,9 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 - `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` are introspected from the Django-owned tables via `yarn db:pull` (table names kept as Django names). `db/migrations/` is reserved for curated forward migrations.
 - `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`).
 - `auth/`: `password.ts` (Django PBKDF2-SHA256 verify/hash), `jwt.ts` (sign/verify), `cookies.ts` (cookie names/options, set/clear), `session.ts` (`getSession`, `requireSession`), `rate-limit.ts` (in-memory login limiter).
-- `services/`: database-facing domain logic used by handlers and RSC; `users.ts` holds `toUserDto`, lookups, `updateUser` and the `canAccessUser` rule (self, or owner sharing a salon).
+- `services/`: database-facing domain logic used by handlers and RSC; `users.ts` holds `toUserDto`, lookups, `updateUser` and the `canAccessUser` rule (self, or owner sharing a salon). `salons.ts`, `customers.ts` and `appointments.ts` hold the DTO mappers and CRUD scoped to the caller's salons (tenancy lives here, never trusted from the body).
+- `src/lib/validation/`: zod schemas mirroring the old DRF serializers (phone normalisation to E.164, UK postcode, salon, customer, appointment); shared by route handlers (and later by client forms).
+- `sms/`: `twilio.ts` (`sendSms`, never throws; skipped with an info log when the Twilio env is unset), `templates.ts` (confirmation, cancellation and reminder texts, UTC wall-clock), `appointments.ts` (sends for an appointment). Routes call these through `after()` so the response is not delayed.
 - `GET /api/health` runs `select 1` through Drizzle: 200 `{status:"ok",db:"ok"}` or 503.
 - Until Phase 3 lands, the voice proxy routes still point at the old backend and do not work.
 
