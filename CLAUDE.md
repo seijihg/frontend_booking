@@ -27,16 +27,17 @@ yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-k
 
 Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL) and `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is). Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
 ### Auth: cookie-based JWT, checked on the server
 
-- The Django backend sets `token` (access JWT) and `refresh_token` as HTTP cookies on login. All client-side fetches to the backend use `credentials: "include"` and send no `Authorization` header.
-- `src/api/userApi.ts` (`getUser`) is the **server-only** auth check: it reads cookies via `next/headers`, decodes the JWT with `jsonwebtoken`, refreshes via `token/refresh/` if expired, then fetches `users/{id}`. It is called in `src/app/layout.tsx` (to seed the user store), `src/app/(protected)/layout.tsx` (redirects to `/login` if no user), and `src/app/login/page.tsx` (redirects to `/dashboard` if logged in).
+- `POST /api/auth/login` verifies the Django PBKDF2 password hash, then sets `token` (access JWT, 1 h) and `refresh_token` (7 d) as HttpOnly, SameSite=Lax cookies signed with `AUTH_SECRET` (jose, HS256, SimpleJWT claim layout). `POST /api/auth/logout` clears both; `POST /api/auth/refresh` rotates both. Client fetches use `credentials: "include"` and send no `Authorization` header.
+- `getSession()` (`src/server/auth/session.ts`, per-request `cache()`) is the server-side auth check for RSC: it verifies the access cookie (falling back to the refresh cookie), loads the user from the database and returns `{ user, needsRotation }` or `null`. It is called in `src/app/layout.tsx` (to seed the user store), `src/app/(protected)/layout.tsx` (redirects to `/login` if no user), `src/app/login/page.tsx` (redirects to `/dashboard` if logged in) and `customers/page.tsx`. Route handlers use `requireSession()`, which throws a 401 `ApiError`.
+- `src/middleware.ts` rotates cookies when the access token is missing or expired but the refresh token is valid, and forwards the fresh access token to the same request. It does no database access. `jwt.ts` and `cookies.ts` must stay Edge-compatible (no `pg`, no Node-only APIs).
 - `UserStoreInitiliazer.tsx` (sic, filename typo is intentional/existing) copies the server-fetched user into the Zustand `useUserStore` once on the client. Client components read `user` from the store, never refetch it. `user.salons[0]` is the current salon ID used for all appointment/customer payloads.
-- Logout (`DashboardNavBar.handleSignOut`) POSTs to `users/logout/`, clears the store, and pushes to `/login` regardless of API success.
+- Logout (`DashboardNavBar.handleSignOut`) POSTs to `auth/logout`, clears the store, and pushes to `/login` regardless of API success.
 
 ### Route groups
 
@@ -49,7 +50,7 @@ Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/
 
 Three-layer convention, one file per domain (`appointment`, `customer`, `salon`, `user`, `voice`):
 
-1. `src/api/*Api.ts` / `*ApiClient.ts` — plain `fetch` wrappers, throw `Error` on non-OK. Files named `*ApiClient.ts` are client-side; `userApi.ts` is server-only (imports `next/headers`) — do not import it from client components.
+1. `src/api/*Api.ts` / `*ApiClient.ts` — plain `fetch` wrappers, throw `Error` on non-OK. Files named `*ApiClient.ts` are client-side; Server code lives under `src/server/` and must not be imported from client components.
 2. `src/hooks/use*.ts` — React Query `useQuery`/`useMutation` wrappers. Mutations invalidate the relevant query keys in `onSuccess`. Appointments use key `["appointments"]` / `["appointments", date]`; salons use the `salonKeys` factory in `useSalon.ts`.
 3. `src/components/**` — client components (`"use client"`) consuming hooks.
 
@@ -73,11 +74,13 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 ### Server layer (`src/server/`)
 
 - Every file under `src/server/` starts with `import "server-only"` (generated `db/schema.ts` and `db/relations.ts` are the exception, since drizzle-kit loads them in plain Node).
-- `env.ts`: `getEnv()` validates `DATABASE_URL` with zod lazily on first call and memoises (so build and tests need no secrets). Later phases add their variables here.
+- `env.ts`: `getEnv()` validates `DATABASE_URL` and `AUTH_SECRET` with zod lazily on first call and memoises (so build and tests need no secrets). Later phases add their variables here.
 - `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` are introspected from the Django-owned tables via `yarn db:pull` (table names kept as Django names). `db/migrations/` is reserved for curated forward migrations.
 - `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`).
+- `auth/`: `password.ts` (Django PBKDF2-SHA256 verify/hash), `jwt.ts` (sign/verify), `cookies.ts` (cookie names/options, set/clear), `session.ts` (`getSession`, `requireSession`), `rate-limit.ts` (in-memory login limiter).
+- `services/`: database-facing domain logic used by handlers and RSC; `users.ts` holds `toUserDto`, lookups, `updateUser` and the `canAccessUser` rule (self, or owner sharing a salon).
 - `GET /api/health` runs `select 1` through Drizzle: 200 `{status:"ok",db:"ok"}` or 503.
-- Until Phase 1 lands, `src/api/userApi.ts` and the voice proxy routes still point at the old backend and do not work; they are replaced by native handlers in Phases 1 and 3 of the plan.
+- Until Phase 3 lands, the voice proxy routes still point at the old backend and do not work.
 
 ### UI conventions
 
