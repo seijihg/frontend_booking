@@ -7,6 +7,9 @@ const envSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o"),
+  OPENAI_WHISPER_MODEL: z.string().default("whisper-1"),
 });
 
 export type Env = z.infer<typeof envSchema>;

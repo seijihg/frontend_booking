@@ -1,29 +1,28 @@
-import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { requireSession } from "@/server/auth/session";
+import { ApiError } from "@/server/http/errors";
+import { handle, json } from "@/server/http/respond";
+import { isOpenAIError } from "@/server/voice/openai";
+import { transcribeAudio, validateAudio } from "@/server/voice/transcribe";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-
-  if (!token) {
-    return NextResponse.json(
-      { detail: "Authentication credentials were not provided." },
-      { status: 401 }
-    );
-  }
-
-  const formData = await request.formData();
-
-  const res = await fetch(`${API_URL}voice/transcribe/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
+export const POST = handle(async (req: Request) => {
+  await requireSession();
+  const form = await req.formData().catch(() => {
+    throw new ApiError(400, { audio: ["No file was submitted."] });
   });
-
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
-}
+  const { file, language } = validateAudio(
+    form.get("audio"),
+    form.get("language") ?? undefined
+  );
+  try {
+    return json({ text: await transcribeAudio(file, language) });
+  } catch (err) {
+    if (!isOpenAIError(err)) throw err;
+    console.error("Transcription failed", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return json({ error: `Transcription failed: ${message}` }, { status: 502 });
+  }
+});

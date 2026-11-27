@@ -27,7 +27,7 @@ yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-k
 
 Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Optional: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (SMS is skipped when any is unset). Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Optional: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (SMS is skipped when any is unset), `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`), `OPENAI_WHISPER_MODEL` (default `whisper-1`) (voice routes return 502 when the key is unset). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
@@ -44,7 +44,7 @@ Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/
 - `src/app/(protected)/` — `dashboard`, `calendar`, `customers`; layout does the auth redirect and renders `DashboardNavBar`. Nav items can be gated with `requiresStaffOrOwner` (checks `user.is_staff || user.is_owner`).
 - `src/app/login/` — public.
 - `src/app/page.tsx` — redirects `/` to `/dashboard`.
-- `src/app/api/voice/{chat,transcribe}/route.ts` — the **only** Next.js API routes. They exist because the backend voice endpoints require a `Bearer` header rather than cookies: the route handler reads the `token` cookie server-side and forwards the request to `${API_URL}voice/...` with `Authorization: Bearer`. Client code calls `/api/voice/...` (relative), not the backend directly. Follow this proxy pattern for any future endpoint that needs a bearer token.
+- `src/app/api/voice/{transcribe,chat}/route.ts` — real handlers (Node runtime, `maxDuration = 60`, `requireSession()` first). `transcribe` validates the multipart `audio` file (10 MB, MIME allow-list) and calls Whisper; `chat` runs the tool-calling assistant loop for `user.salons[0]` and returns `{ reply, conversation_history, appointments? }`. OpenAI SDK failures map to `502 { error }`; client code calls them relatively (`/api/voice/...`) and nothing references the old backend.
 
 ### Data layer: api -> hooks -> components
 
@@ -82,7 +82,7 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 - `src/lib/validation/`: zod schemas mirroring the old DRF serializers (phone normalisation to E.164, UK postcode, salon, customer, appointment); shared by route handlers (and later by client forms).
 - `sms/`: `twilio.ts` (`sendSms`, never throws; skipped with an info log when the Twilio env is unset), `templates.ts` (confirmation, cancellation and reminder texts, UTC wall-clock), `appointments.ts` (sends for an appointment). Routes call these through `after()` so the response is not delayed.
 - `GET /api/health` runs `select 1` through Drizzle: 200 `{status:"ok",db:"ok"}` or 503.
-- Until Phase 3 lands, the voice proxy routes still point at the old backend and do not work.
+- `voice/`: `openai.ts` (lazy `getOpenAI()`, 502 `ApiError` when the key is unset; `isOpenAIError`), `transcribe.ts` (`validateAudio`, `transcribeAudio`), `tools.ts` (zod schemas -> `TOOL_DEFINITIONS` identical to the Django tools, lenient `parseToolArgs`), `prompts.ts` (verbatim system prompt, `buildSystemPrompt`, UTC date), `executor.ts` (`executeToolCall` over an injectable `VoiceRepo`; always returns a JSON string), `repo.ts` (Drizzle `VoiceRepo`; writes go through the customer/appointment services), `assistant.ts` (`runAssistant`, provider-agnostic loop capped at 5 rounds) and `providers/openai.ts` (`ChatProvider`). Chat routes send the confirmation SMS for created appointments via `after()`. `conversation_history` keeps the OpenAI message format and omits the system and intermediate tool messages, as Django did.
 
 ### UI conventions
 
