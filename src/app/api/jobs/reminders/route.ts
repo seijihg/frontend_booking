@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Vercel Cron issues GET; POST is allowed for manual triggering.
+// Vercel Schedules is configured to issue GET (vercel.json); POST is allowed for manual triggering.
 const run = handle(async (request: Request) => {
   const auth = authorizeCron(request.headers.get("authorization"), getEnv().CRON_SECRET);
   if (auth === "unconfigured") return json({ detail: "Cron is not configured." }, { status: 503 });

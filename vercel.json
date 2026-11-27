@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "schedules": {
+    "reminders": {
+      "schedule": "*/5 * * * *",
+      "path": "/api/jobs/reminders",
+      "requestMethod": "GET"
+    }
+  }
+}
