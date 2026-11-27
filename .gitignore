@@ -54,3 +54,6 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,react
 
 *.pem
+
+# drizzle-kit introspection output (see scripts/db-pull.ts)
+/.drizzle
