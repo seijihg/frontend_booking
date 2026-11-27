@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Talks to a separate Django REST backend at `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000/api/`, trailing slash required — URLs are built by string concatenation like `API_URL + "users/login/"`).
+Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Client code talks to `NEXT_PUBLIC_API_URL`, which is now `/api/` (this app); the strangler proxy under `src/app/api/[...path]` forwards unmatched calls to the Django REST backend at `LEGACY_API_URL` (e.g. `http://localhost:8000/`, no `api/` prefix). Trailing slash required on both — URLs are built by string concatenation like `API_URL + "users/login/"`.
 
 ## Commands
 
@@ -16,12 +16,18 @@ yarn dev        # http://localhost:3000
 yarn build
 yarn start
 yarn lint       # next lint (eslint-config-next/core-web-vitals only)
+yarn typecheck  # tsc --noEmit (tsconfig is strict)
+yarn test       # vitest run (test:watch for watch mode)
+yarn db:pull    # introspect DATABASE_URL into src/server/db/{schema,relations}.ts
+yarn db:generate  # drizzle-kit generate (curated forward migrations)
+yarn db:migrate   # drizzle-kit migrate
+# yarn db:seed arrives in a later phase
 yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-key.pem in root (gitignored)
 ```
 
-There is no test framework or test suite in this repo. Type-check with `npx tsc --noEmit` (tsconfig is `strict`).
+Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` with `NEXT_PUBLIC_API_URL`. Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `LEGACY_API_URL` (Django base URL used by the strangler proxy and server-side auth; removed at cutover) and `DATABASE_URL` (Postgres, shared with Django during migration). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
@@ -63,6 +69,15 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 - Times are treated as **UTC wall-clock, not converted to local**: `CalendarView` parses backend `appointment_time` with `dayjs.utc(...)` and formats without local conversion; `AppointmentForm` builds payloads as `${date}T${time}:00Z`. Preserve this — mixing in local-time conversion will shift appointments.
 - Backend appointment shape is `BookingData` (`appointment_time`, `end_time`, `column_id`, `customer`, `salon`, `user`); the UI shape is `Appointment` (`date`, `startTime`, `endTime`). Transformation happens in `CalendarView`.
 - Week/month/year views are placeholders ("coming soon").
+
+### Server layer (`src/server/`)
+
+- Every file under `src/server/` starts with `import "server-only"` (generated `db/schema.ts` and `db/relations.ts` are the exception, since drizzle-kit loads them in plain Node).
+- `env.ts`: `getEnv()` validates `DATABASE_URL` and `LEGACY_API_URL` with zod lazily on first call and memoises (so build and tests need no secrets).
+- `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` are introspected from the Django-owned tables via `yarn db:pull` (table names kept as Django names). `db/migrations/` is reserved for curated forward migrations.
+- `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`), `legacy-proxy.ts` (strangler proxy helpers).
+- `GET /api/health` runs `select 1` through Drizzle: 200 `{status:"ok",db:"ok"}` or 503.
+- Strangler proxy: `src/app/api/[...path]/route.ts` forwards any `/api/*` request not matched by a specific route (`/api/health`, `/api/voice/*`) to `LEGACY_API_URL`, always with a trailing slash, forwarding cookies and every `Set-Cookie`. It logs `[legacy-proxy] METHOD /path/ -> status ms`; that log is the signal for when the proxy can be decommissioned.
 
 ### UI conventions
 
