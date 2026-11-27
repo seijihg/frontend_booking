@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 import { isTokenExpired } from "@/utils/tokens";
+import { getEnv } from "@/server/env";
 import { RefreshResponse } from "@/types/misc";
 
 export default async function getUser() {
@@ -21,7 +22,7 @@ export default async function getUser() {
       refresh: refresh_token,
     };
     const refresh_response = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + "token/refresh/",
+      getEnv().LEGACY_API_URL + "token/refresh/",
       {
         method: "POST",
         headers: {
@@ -44,7 +45,7 @@ export default async function getUser() {
 
   const userId = decoded_token.user_id;
 
-  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + `users/${userId}`, {
+  const res = await fetch(getEnv().LEGACY_API_URL + `users/${userId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

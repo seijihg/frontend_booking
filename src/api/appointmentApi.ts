@@ -19,13 +19,18 @@ export const createAppointment = async (data: AppointmentPayload) => {
 };
 
 export const getAppointments = async (date?: string) => {
-  const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}appointments/`);
+  const params = new URLSearchParams();
 
   if (date) {
-    url.searchParams.set("date", date);
+    params.set("date", date);
   }
 
-  const res = await fetch(url.toString(), {
+  const query = params.toString();
+  const url = `${process.env.NEXT_PUBLIC_API_URL}appointments/${
+    query ? `?${query}` : ""
+  }`;
+
+  const res = await fetch(url, {
     credentials: "include",
   });
 
