@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getEnv } from "@/server/env";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
 
-  const res = await fetch(`${getEnv().LEGACY_API_URL}voice/transcribe/`, {
+  const res = await fetch(`${API_URL}voice/transcribe/`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

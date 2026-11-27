@@ -3,7 +3,6 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
-  LEGACY_API_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;

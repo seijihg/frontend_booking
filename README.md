@@ -25,11 +25,9 @@ A Next.js 15 booking platform for appointment scheduling, built with React 19, T
 
    Create a `.env.local` file in the project root:
    ```env
-   # Browser base URL (this app; strangler proxy during migration)
+   # Browser base URL (this app)
    NEXT_PUBLIC_API_URL=/api/
-   # Django base URL used by the proxy and server-side auth
-   LEGACY_API_URL=http://localhost:8000/
-   # Postgres connection string
+   # Postgres connection string (the database the Django backend created)
    DATABASE_URL=postgresql://booking_user:booking_password@localhost:5433/booking_db
    ```
 
