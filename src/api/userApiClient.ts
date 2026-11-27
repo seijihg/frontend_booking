@@ -9,7 +9,7 @@ export interface LoginRequest {
 // Client-side function to login user
 export const loginUser = async (payload: LoginRequest) => {
   const response = await fetch(
-    process.env.NEXT_PUBLIC_API_URL + "users/login/",
+    process.env.NEXT_PUBLIC_API_URL + "auth/login",
     {
       method: "POST",
       headers: {

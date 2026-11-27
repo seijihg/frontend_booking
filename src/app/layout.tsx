@@ -2,7 +2,7 @@ import "@/styles/globals.scss";
 
 import UserStoreInitializer from "@/components/UserStoreInitiliazer";
 import Providers from "@/utils/provider";
-import getUser from "@/api/userApi";
+import { getSession } from "@/server/auth/session";
 import { Analytics } from "@vercel/analytics/react";
 
 export const metadata = {
@@ -15,8 +15,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const data = await getUser();
-  const user = data?.user;
+  const session = await getSession();
+  const user = session?.user;
 
   return (
     <html lang="en" className="h-full bg-white">
