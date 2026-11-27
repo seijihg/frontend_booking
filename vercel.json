@@ -4,7 +4,8 @@
     "reminders": {
       "schedule": "*/5 * * * *",
       "path": "/api/jobs/reminders",
-      "requestMethod": "GET"
+      "requestMethod": "GET",
+      "jitter": 1
     }
   }
 }
