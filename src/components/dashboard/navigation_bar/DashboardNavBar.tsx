@@ -43,7 +43,7 @@ export default function DashboardNavBar() {
   const handleSignOut = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}users/logout/`,
+        `${process.env.NEXT_PUBLIC_API_URL}auth/logout`,
         {
           method: "POST",
           credentials: "include",

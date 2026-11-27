@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import LoginForm from "@/components/authentication/Login";
-import getUser from "@/api/userApi";
+import { getSession } from "@/server/auth/session";
 
 export default async function LoginPage() {
   // Server-side authentication check
-  const data = await getUser();
-  const user = data?.user;
+  const session = await getSession();
+  const user = session?.user;
 
   // Redirect authenticated users to dashboard
   if (user) {
