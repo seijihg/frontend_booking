@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Client code talks to `NEXT_PUBLIC_API_URL`, which is now `/api/` (this app). The separate Django REST backend has been switched off and its endpoints are being re-implemented as Next.js route handlers under `src/app/api/` (see `docs/design/`). Trailing slash required — URLs are built by string concatenation like `API_URL + "users/login/"`.
+Next.js 15 (App Router) frontend for a nail-salon appointment booking system. React 19 RC, TypeScript, Tailwind CSS 3, Zustand, TanStack React Query 5. Client code talks to this app's own route handlers under `src/app/api/` through the hard-coded base `API_BASE = "/api/"` (`src/api/base.ts`). The separate Django REST backend has been fully replaced (design in `docs/design/`); the Postgres schema was adopted with the Django table names. Trailing slash required — URLs are built by string concatenation like `API_BASE + "users/login/"`.
 
 ## Commands
 
@@ -21,13 +21,13 @@ yarn test       # vitest run (test:watch for watch mode)
 yarn db:pull    # introspect DATABASE_URL into src/server/db/{schema,relations}.ts
 yarn db:generate  # drizzle-kit generate (curated forward migrations)
 yarn db:migrate   # drizzle-kit migrate
-# yarn db:seed arrives in a later phase
+yarn db:seed    # create the default salon, address and owner from SEED_* env (idempotent)
 yarn ssl        # HTTPS proxy on :3001 -> :3000; needs localhost.pem/localhost-key.pem in root (gitignored)
 ```
 
 Tests use vitest (`yarn test`): node environment, files matching `src/**/*.test.ts` and `scripts/**/*.test.ts`, `@` aliased to `src`, and `server-only` aliased to an empty stub (`src/test/server-only-stub.ts`) because the real package throws outside the Next server bundle. CI (`.github/workflows/ci.yml`) runs lint, typecheck and test.
 
-Required env: `.env.local` (copy `.env.example`) with `NEXT_PUBLIC_API_URL=/api/` (browser base URL), `DATABASE_URL` (the Postgres database the Django backend created; its schema is adopted as-is) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Optional: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (SMS is skipped when any is unset), `CRON_SECRET` (16+ chars; bearer token for `/api/jobs/*`, 503 when unset), `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`), `OPENAI_WHISPER_MODEL` (default `whisper-1`) (voice routes return 502 when the key is unset). Path alias `@/*` -> `src/*`.
+Required env: `.env.local` (copy `.env.example`) with `DATABASE_URL` (Postgres; `docker compose up -d db` starts a local one on port 5433, then `yarn db:migrate` and `yarn db:seed`) and `AUTH_SECRET` (32+ random chars used to sign JWTs, e.g. `openssl rand -base64 48`). Optional: `SEED_*` (salon and owner details read by `yarn db:seed`; see `scripts/seed.ts`), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` (SMS is skipped when any is unset), `CRON_SECRET` (16+ chars; bearer token for `/api/jobs/*`, 503 when unset), `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`), `OPENAI_WHISPER_MODEL` (default `whisper-1`) (voice routes return 502 when the key is unset). Path alias `@/*` -> `src/*`.
 
 ## Architecture
 
@@ -75,7 +75,7 @@ Components frequently call `useXStore.getState()` inside async callbacks to avoi
 
 - Every file under `src/server/` starts with `import "server-only"` (generated `db/schema.ts` and `db/relations.ts` are the exception, since drizzle-kit loads them in plain Node).
 - `env.ts`: `getEnv()` validates `DATABASE_URL` and `AUTH_SECRET` with zod lazily on first call and memoises (so build and tests need no secrets). Later phases add their variables here.
-- `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` are introspected from the Django-owned tables via `yarn db:pull` (table names kept as Django names). `db/migrations/` holds curated forward migrations: hand-written idempotent SQL created with `drizzle-kit generate --custom --name <n>` (never diff-mode generate, there is no baseline snapshot) and applied with `yarn db:migrate`; the first one adds `reminder_sent_at`/`confirmation_sent_at` and indexes to `appointment_appointment`. After a migration, add the columns to `schema.ts` by hand (a full `db:pull` reorders the file).
+- `db/`: `client.ts` exports `getPool()` (a `pg` pool cached on `globalThis`) and `getDb()` (Drizzle), both lazy so `next build` needs no `DATABASE_URL`; `schema.ts`/`relations.ts` describe the nine kept tables (introspected via `yarn db:pull`, table names kept as Django names; the Django-only tables and `appointment_appointment.task_id` are gone). `db/migrations/` holds curated forward migrations: hand-written idempotent SQL created with `drizzle-kit generate --custom --name <n>` (never diff-mode generate, there is no baseline snapshot) and applied with `yarn db:migrate`; `0000_baseline_schema` (a guarded `DO` block that builds the schema on an empty database and is a no-op when `salon_salon` exists; its journal `when` predates `0001`, so an adopted database skips it), `0001_add_reminder_columns` (adds `reminder_sent_at`/`confirmation_sent_at` and indexes to `appointment_appointment`) and `0002_drop_django_tables` (drops the Django-only tables and `task_id`). A fresh database needs only `yarn db:migrate`; `yarn db:seed` (`scripts/seed.ts`, run with the `react-server` condition so `server-only` resolves to its empty module) then creates the default salon, address and owner. After a migration, add the columns to `schema.ts` by hand (a full `db:pull` reorders the file).
 - `http/`: `errors.ts` (`ApiError`, DRF-shaped helpers, `zodToFieldErrors`), `respond.ts` (`json`, `noContent`, `handle`).
 - `auth/`: `password.ts` (Django PBKDF2-SHA256 verify/hash), `jwt.ts` (sign/verify), `cookies.ts` (cookie names/options, set/clear), `session.ts` (`getSession`, `requireSession`), `rate-limit.ts` (in-memory login limiter).
 - `services/`: database-facing domain logic used by handlers and RSC; `users.ts` holds `toUserDto`, lookups, `updateUser` and the `canAccessUser` rule (self, or owner sharing a salon). `salons.ts`, `customers.ts` and `appointments.ts` hold the DTO mappers and CRUD scoped to the caller's salons (tenancy lives here, never trusted from the body).

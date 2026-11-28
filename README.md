@@ -1,64 +1,67 @@
 # Frontend Booking System
 
-A Next.js 15 booking platform for appointment scheduling, built with React 19, TypeScript, and Tailwind CSS.
+A Next.js 15 (App Router) appointment booking system for a nail salon, built with React 19, TypeScript and Tailwind CSS. It is a single app: the UI, the REST API (route handlers under `src/app/api/`) and the PostgreSQL access (Drizzle) all live in this repository.
 
 ## Prerequisites
 
 - Node.js >= 22.12.0 (see `.nvmrc`)
-- Yarn package manager
-- Backend API running (Django)
+- Yarn
+- Docker (for the local Postgres)
 
-## Installation
+## Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone git@github.com:seijihg/frontend_booking.git
-   cd frontend_booking
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    yarn install
    ```
 
-3. **Set up environment variables**
-
-   Create a `.env.local` file in the project root:
-   ```env
-   # Browser base URL (this app)
-   NEXT_PUBLIC_API_URL=/api/
-   # Postgres connection string (the database the Django backend created)
-   DATABASE_URL=postgresql://booking_user:booking_password@localhost:5433/booking_db
+2. **Start Postgres**
+   ```bash
+   docker compose up -d db
    ```
+   This runs Postgres 15 on host port 5433 (database `booking_db`, user `booking_user`).
 
-## Running the Development Server
+3. **Set environment variables**
 
-**Standard development mode:**
-```bash
-yarn dev
-```
+   Copy `.env.example` to `.env.local` and fill in:
+   - `DATABASE_URL` (the default points at the compose database)
+   - `AUTH_SECRET` (32+ random chars, e.g. `openssl rand -base64 48`)
+   - optional: Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`), OpenAI (`OPENAI_API_KEY`), `CRON_SECRET`
+   - optional: `SEED_*` values used by `yarn db:seed` (salon and owner details; see `scripts/seed.ts`)
 
-**Development with SSL (for testing HTTPS):**
-```bash
-yarn ssl
-```
+4. **Create the schema and seed the owner**
+   ```bash
+   yarn db:migrate
+   yarn db:seed
+   ```
+   `db:seed` creates the default salon, its address and the owner user, and is safe to run again.
 
-The application will be available at:
-- `http://localhost:3000` (standard)
-- `https://localhost:3000` (SSL mode)
+5. **Run the app**
+   ```bash
+   yarn dev
+   ```
+   Open `http://localhost:3000`.
 
-## Other Commands
+## Commands
 
-```bash
-# Build for production
-yarn build
+| Command | Description |
+| --- | --- |
+| `yarn dev` | Development server on http://localhost:3000 |
+| `yarn build` | Production build |
+| `yarn start` | Serve the production build |
+| `yarn lint` | ESLint (`next lint`) |
+| `yarn typecheck` | `tsc --noEmit` |
+| `yarn test` | Unit tests (vitest) |
+| `yarn db:migrate` | Apply the migrations in `src/server/db/migrations/` |
+| `yarn db:seed` | Create the default salon, address and owner (idempotent) |
+| `yarn db:pull` | Introspect `DATABASE_URL` into `src/server/db/{schema,relations}.ts` |
+| `yarn db:generate` | Generate a Drizzle migration (use `--custom` for hand-written SQL) |
+| `yarn ssl` | HTTPS proxy on :3001 to :3000 (needs `localhost.pem` and `localhost-key.pem`) |
 
-# Start production server
-yarn start
+## Architecture
 
-# Run linting
-yarn lint
-```
+The browser talks to this app's own `/api/` route handlers with cookie-based JWT auth; handlers use Drizzle against Postgres. See `docs/design/` for the design and migration plan and `CLAUDE.md` for the code conventions and layer overview.
 
-## Documentation
+## Deployment
 
+Deploy on Vercel. Set the same environment variables as in `.env.local` (`DATABASE_URL`, `AUTH_SECRET`, `CRON_SECRET`, and the optional Twilio and OpenAI values). Run `yarn db:migrate` against the production database before deploying. Vercel Schedules calls `/api/jobs/reminders` every 5 minutes with `CRON_SECRET` as the bearer token.
