@@ -18,7 +18,20 @@ function createDb(pool: Pool) {
 }
 
 export function getPool(): Pool {
-  globalForDb.__pgPool ??= new Pool({ connectionString: getEnv().DATABASE_URL });
+  if (!globalForDb.__pgPool) {
+    // Small pool: on Vercel every function instance has its own, and a
+    // managed Postgres (Neon) pools server-side behind the `-pooler` host.
+    const pool = new Pool({
+      connectionString: getEnv().DATABASE_URL,
+      max: 5,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+    });
+    // Neon scales to zero after inactivity and drops idle connections; an
+    // unhandled pool error would crash the process instead of reconnecting.
+    pool.on("error", (err) => console.error("[db] idle client error", err));
+    globalForDb.__pgPool = pool;
+  }
   return globalForDb.__pgPool;
 }
 
