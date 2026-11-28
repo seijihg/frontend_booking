@@ -1,3 +1,4 @@
+import { API_BASE } from "@/api/base";
 import { User } from "@/types/user";
 
 // Login request interface
@@ -9,7 +10,7 @@ export interface LoginRequest {
 // Client-side function to login user
 export const loginUser = async (payload: LoginRequest) => {
   const response = await fetch(
-    process.env.NEXT_PUBLIC_API_URL + "auth/login",
+    API_BASE + "auth/login",
     {
       method: "POST",
       headers: {
@@ -40,7 +41,7 @@ export const updateUser = async (
   data: UpdateUserRequest
 ): Promise<User> => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}users/${userId}/`,
+    `${API_BASE}users/${userId}/`,
     {
       method: "PATCH",
       headers: {

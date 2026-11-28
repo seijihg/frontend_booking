@@ -1,7 +1,8 @@
+import { API_BASE } from "@/api/base";
 import { AppointmentPayload } from "@/types/appointment";
 
 export const createAppointment = async (data: AppointmentPayload) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}appointments/`, {
+  const res = await fetch(`${API_BASE}appointments/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,7 +27,7 @@ export const getAppointments = async (date?: string) => {
   }
 
   const query = params.toString();
-  const url = `${process.env.NEXT_PUBLIC_API_URL}appointments/${
+  const url = `${API_BASE}appointments/${
     query ? `?${query}` : ""
   }`;
 
@@ -46,7 +47,7 @@ export const updateAppointment = async (
   data: Partial<AppointmentPayload>
 ) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}appointments/${appointmentId}/`,
+    `${API_BASE}appointments/${appointmentId}/`,
     {
       method: "PATCH",
       headers: {
@@ -67,7 +68,7 @@ export const updateAppointment = async (
 
 export const deleteAppointment = async (appointmentId: number) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}appointments/${appointmentId}/`,
+    `${API_BASE}appointments/${appointmentId}/`,
     {
       method: "DELETE",
       credentials: "include",

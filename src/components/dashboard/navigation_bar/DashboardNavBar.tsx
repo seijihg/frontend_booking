@@ -7,6 +7,7 @@ import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 
+import { API_BASE } from "@/api/base";
 import { useUserStore } from "@/stores/userStore";
 
 const temp = {
@@ -43,7 +44,7 @@ export default function DashboardNavBar() {
   const handleSignOut = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}auth/logout`,
+        `${API_BASE}auth/logout`,
         {
           method: "POST",
           credentials: "include",

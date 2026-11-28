@@ -1,3 +1,4 @@
+import { API_BASE } from "@/api/base";
 import { 
   CreateSalonRequest,
   UpdateSalonRequest,
@@ -7,7 +8,6 @@ import {
   Salon 
 } from "@/types/salon";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/";
 
 // Helper function to handle API responses
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -20,7 +20,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // Create a new salon
 export async function createSalon(data: CreateSalonRequest): Promise<CreateSalonResponse> {
-  const response = await fetch(`${API_URL}salons/`, {
+  const response = await fetch(`${API_BASE}salons/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -34,7 +34,7 @@ export async function createSalon(data: CreateSalonRequest): Promise<CreateSalon
 
 // Get a salon by ID
 export async function getSalon(salonId: number): Promise<GetSalonResponse> {
-  const response = await fetch(`${API_URL}salons/${salonId}/`, {
+  const response = await fetch(`${API_BASE}salons/${salonId}/`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -63,7 +63,7 @@ export async function getSalons(params?: {
     queryParams.append("search", params.search);
   }
 
-  const url = `${API_URL}salons/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+  const url = `${API_BASE}salons/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
   
   const response = await fetch(url, {
     method: "GET",
@@ -81,7 +81,7 @@ export async function updateSalon(
   salonId: number, 
   data: UpdateSalonRequest
 ): Promise<CreateSalonResponse> {
-  const response = await fetch(`${API_URL}salons/${salonId}/`, {
+  const response = await fetch(`${API_BASE}salons/${salonId}/`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -95,7 +95,7 @@ export async function updateSalon(
 
 // Delete a salon
 export async function deleteSalon(salonId: number): Promise<void> {
-  const response = await fetch(`${API_URL}salons/${salonId}/`, {
+  const response = await fetch(`${API_BASE}salons/${salonId}/`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
