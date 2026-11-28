@@ -1,0 +1,27 @@
+# Local Postgres for development. The Django repo's compose previously owned
+# this database. To keep an existing local database, comment out the named
+# volume below and use the external one instead:
+#
+#   volumes:
+#     postgres_data:
+#       name: backend_booking_postgres_data
+#       external: true
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: booking_user
+      POSTGRES_PASSWORD: booking_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # host port 5433 avoids a clash with a local PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking_user -d booking_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -1,3 +1,4 @@
+import { API_BASE } from "@/api/base";
 import { Customer, UpdateCustomerRequest } from "@/types/customer";
 
 // Parameters for fetching customers with optional filtering and sorting
@@ -25,8 +26,8 @@ export const getCustomers = async (
 
   const queryString = searchParams.toString();
   const url = queryString
-    ? `${process.env.NEXT_PUBLIC_API_URL}customers/?${queryString}`
-    : `${process.env.NEXT_PUBLIC_API_URL}customers/`;
+    ? `${API_BASE}customers/?${queryString}`
+    : `${API_BASE}customers/`;
 
   const res = await fetch(url, {
     method: "GET",
@@ -46,7 +47,7 @@ export const getCustomers = async (
 
 export const getCustomer = async (customerId: number) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
+    `${API_BASE}customers/${customerId}/`,
     {
       credentials: "include",
     }
@@ -64,7 +65,7 @@ export const createCustomer = async (data: {
   phone_number: string;
   salon_ids: number[];
 }) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}customers/`, {
+  const res = await fetch(`${API_BASE}customers/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -87,7 +88,7 @@ export const updateCustomer = async (
   data: UpdateCustomerRequest
 ) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
+    `${API_BASE}customers/${customerId}/`,
     {
       method: "PATCH",
       headers: {
@@ -109,7 +110,7 @@ export const updateCustomer = async (
 // Delete customer
 export const deleteCustomer = async (customerId: number) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}customers/${customerId}/`,
+    `${API_BASE}customers/${customerId}/`,
     {
       method: "DELETE",
       headers: {

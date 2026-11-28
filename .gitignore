@@ -57,3 +57,4 @@ sketch
 
 # drizzle-kit introspection output (see scripts/db-pull.ts)
 /.drizzle
+.backups/

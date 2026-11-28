@@ -5,8 +5,22 @@
     {
       "idx": 0,
       "version": "7",
+      "when": 1795822326105,
+      "tag": "0000_baseline_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
       "when": 1795822386105,
-      "tag": "0000_add_reminder_columns",
+      "tag": "0001_add_reminder_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795824614005,
+      "tag": "0002_drop_django_tables",
       "breakpoints": true
     }
   ]

@@ -16,7 +16,6 @@ export interface BookingData {
   end_time: string;
   comment: string;
   column_id: number;
-  task_id: string;
   salon: number;
   user: number;
   customer: number;
