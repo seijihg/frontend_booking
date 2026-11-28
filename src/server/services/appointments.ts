@@ -160,7 +160,13 @@ export async function updateAppointment(
   };
   if (patch.salon !== undefined) set.salonId = patch.salon;
   if (patch.customer !== undefined) set.customerId = patch.customer;
-  if (patch.appointment_time !== undefined) set.appointmentTime = patch.appointment_time;
+  if (patch.appointment_time !== undefined) {
+    set.appointmentTime = patch.appointment_time;
+    // A moved appointment needs a fresh reminder: let the sweep recompute it.
+    if (new Date(patch.appointment_time).getTime() !== new Date(existing.appointmentTime).getTime()) {
+      set.reminderSentAt = null;
+    }
+  }
   if (patch.end_time !== undefined) set.endTime = patch.end_time;
   if (patch.comment !== undefined) set.comment = patch.comment;
   if (patch.column_id !== undefined) set.columnId = patch.column_id;
@@ -191,6 +197,13 @@ export async function deleteAppointment(
     customerName: ctx?.customerName ?? "",
     salonName: ctx?.salonName ?? "",
   };
+}
+
+export async function markConfirmationSent(id: number): Promise<void> {
+  await getDb()
+    .update(appointmentAppointment)
+    .set({ confirmationSentAt: new Date().toISOString() })
+    .where(eq(appointmentAppointment.id, id));
 }
 
 /** Not tenancy-scoped: only called with ids the caller already resolved. */

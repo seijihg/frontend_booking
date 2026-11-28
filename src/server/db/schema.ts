@@ -297,7 +297,9 @@ export const customerCustomer = pgTable("customer_customer", {
 	created: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
 	modified: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
 	fullName: varchar("full_name", { length: 150 }).notNull(),
-});
+}, (table) => [
+	index("customer_customer_phone_number_idx").using("btree", table.phoneNumber.asc().nullsLast().op("text_ops")),
+]);
 
 export const authtokenToken = pgTable("authtoken_token", {
 	key: varchar({ length: 40 }).primaryKey().notNull(),
@@ -330,8 +332,12 @@ export const appointmentAppointment = pgTable("appointment_appointment", {
 	salonId: bigint("salon_id", { mode: "number" }).notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	userId: bigint("user_id", { mode: "number" }).notNull(),
+	reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true, mode: 'string' }),
+	confirmationSentAt: timestamp("confirmation_sent_at", { withTimezone: true, mode: 'string' }),
 }, (table) => [
 	index("appointment_appointment_customer_id_92575998").using("btree", table.customerId.asc().nullsLast().op("int8_ops")),
+	index("appointment_appointment_reminder_pending_idx").using("btree", table.appointmentTime.asc().nullsLast().op("timestamptz_ops")).where(sql`(reminder_sent_at IS NULL)`),
+	index("appointment_appointment_salon_id_appointment_time_idx").using("btree", table.salonId.asc().nullsLast().op("int8_ops"), table.appointmentTime.asc().nullsLast().op("timestamptz_ops")),
 	index("appointment_appointment_salon_id_e59561a4").using("btree", table.salonId.asc().nullsLast().op("int8_ops")),
 	index("appointment_appointment_user_id_2ab0376a").using("btree", table.userId.asc().nullsLast().op("int8_ops")),
 	foreignKey({

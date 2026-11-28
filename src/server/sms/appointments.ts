@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   loadSmsContext,
+  markConfirmationSent,
   type DeletedAppointmentSnapshot,
 } from "@/server/services/appointments";
 import { sendSms } from "./twilio";
@@ -16,7 +17,8 @@ export async function sendAppointmentConfirmation(appointmentId: number): Promis
       console.info("[sms] skipped (customer has no phone number)", { appointmentId });
       return;
     }
-    await sendSms(ctx.customerPhone, confirmationText(ctx));
+    const result = await sendSms(ctx.customerPhone, confirmationText(ctx));
+    if (result === "sent") await markConfirmationSent(appointmentId);
   } catch (err) {
     console.error("[sms] confirmation failed", err);
   }
