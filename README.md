@@ -64,7 +64,7 @@ The browser talks to this app's own `/api/` route handlers with cookie-based JWT
 
 ## Deployment
 
-Deploy on Vercel. Set the same environment variables as in `.env.local` (`DATABASE_URL`, `AUTH_SECRET`, `CRON_SECRET`, and the optional Twilio and OpenAI values). Run `yarn db:migrate` against the production database before deploying. Vercel Schedules calls `/api/jobs/reminders` every 5 minutes with `CRON_SECRET` as the bearer token.
+Deploy on Vercel. Set the same environment variables as in `.env.local` (`DATABASE_URL`, `AUTH_SECRET`, `CRON_SECRET`, and the optional Twilio and OpenAI values). Run `yarn db:migrate` against the production database before deploying. Vercel Schedules calls `/api/jobs/reminders` every 15 minutes with `CRON_SECRET` as the bearer token (a reminder can therefore arrive up to 15 minutes later than the configured offset).
 
 ### Neon
 
@@ -75,4 +75,4 @@ DATABASE_URL="postgresql://…@ep-xxx.region.aws.neon.tech/neondb?sslmode=verify
 DATABASE_URL="postgresql://…@ep-xxx.region.aws.neon.tech/neondb?sslmode=verify-full" yarn db:seed
 ```
 
-Neon's free plan suspends the compute after 5 minutes idle and allows 100 compute-hours per project per month; a schedule that wakes it every 5 minutes keeps it running almost continuously, so widen the sweep interval in `vercel.json` if the project must stay on the free plan.
+Neon's free plan suspends the compute after 5 minutes idle and allows 100 compute-hours per project per month; the sweep runs every 15 minutes so the compute sleeps between runs; a 5-minute cadence would keep it awake almost continuously and exceed the free allowance.

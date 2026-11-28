@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "schedules": {
     "reminders": {
-      "schedule": "*/5 * * * *",
+      "schedule": "*/15 * * * *",
       "path": "/api/jobs/reminders",
       "requestMethod": "GET",
       "jitter": 1

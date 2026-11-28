@@ -10,6 +10,7 @@ try {
   // fall back to the real environment
 }
 
+import { normalizePhoneNumber } from "@/lib/validation/phone";
 import { hashPassword } from "@/server/auth/password";
 import { getDb, getPool } from "@/server/db/client";
 import {
@@ -26,17 +27,25 @@ function env(name: string, fallback: string): string {
   return process.env[name] || fallback;
 }
 
+/** E.164 like the Django PhoneNumberField did; exits when the value cannot be normalised. */
+function phoneEnv(name: string, fallback: string): string {
+  const raw = env(name, fallback);
+  const normalised = normalizePhoneNumber(raw);
+  if (!normalised) throw new Error(`${name} is not a valid UK or E.164 phone number.`);
+  return normalised;
+}
+
 async function main() {
   console.log("Starting database seeding...");
 
   const salonName = env("SEED_SALON_NAME", "Default Salon");
-  const salonPhone = env("SEED_SALON_PHONE_NUMBER", "+447700900000");
+  const salonPhone = phoneEnv("SEED_SALON_PHONE_NUMBER", "+447700900000");
   const street = env("SEED_SALON_STREET", "123 Default St");
   const city = env("SEED_SALON_CITY", "London");
   const postalCode = env("SEED_SALON_POSTAL_CODE", "SW1A 1AA");
 
   const ownerEmail = env("SEED_OWNER_EMAIL", "owner@example.com");
-  const ownerPhone = env("SEED_OWNER_PHONE_NUMBER", "+447700900001");
+  const ownerPhone = phoneEnv("SEED_OWNER_PHONE_NUMBER", "+447700900001");
   const ownerFirstName = env("SEED_OWNER_FIRST_NAME", "Default");
   const ownerLastName = env("SEED_OWNER_LAST_NAME", "Owner");
   const ownerFullName = env("SEED_OWNER_FULL_NAME", "Default Owner");
