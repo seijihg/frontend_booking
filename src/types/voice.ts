@@ -43,7 +43,6 @@ export interface BookingData {
   end_time: string;
   column_id: number;
   comment: string;
-  task_id: string;
   created: string;
   modified: string;
 }

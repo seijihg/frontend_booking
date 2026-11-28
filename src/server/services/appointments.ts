@@ -49,7 +49,6 @@ export function toAppointmentDto(row: AppointmentRow): AppointmentDto {
     end_time: row.endTime ? toIso(row.endTime) : null,
     comment: row.comment,
     column_id: row.columnId,
-    task_id: row.taskId ?? "",
     salon: row.salonId,
     user: row.userId,
     customer: row.customerId,
@@ -132,7 +131,6 @@ export async function createAppointment(
       endTime: input.end_time ?? null,
       comment: input.comment,
       columnId: input.column_id,
-      taskId: "",
       created: now,
       modified: now,
     })
